@@ -1,16 +1,55 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import Header from './components/Header';
+import { BrowserRouter as Router, Routes, Route, NavLink } from 'react-router-dom';
+import { ClipboardList, PlusCircle, Home as HomeIcon, Database } from 'lucide-react';
 import Home from './pages/Home';
 import RegistrationForm from './components/RegistrationForm';
 import RegistrationList from './components/RegistrationList';
 
 function App() {
+  const navLinkClass = ({ isActive }: { isActive: boolean }) =>
+    `flex items-center gap-2 px-3 py-2 rounded text-sm transition-colors duration-100 ${
+      isActive
+        ? 'bg-gray-700/60 text-white font-medium'
+        : 'text-gray-300 hover:bg-gray-700/40 hover:text-white'
+    }`;
+
   return (
     <Router>
-      <div className="min-h-screen flex flex-col bg-gray-50">
-        <Header />
-        <main className="flex-grow container mx-auto px-4 py-6">
+      <div className="h-full flex">
+        {/* Sidebar */}
+        <aside className="w-52 flex-shrink-0 bg-gray-900 flex flex-col border-r border-gray-800">
+          {/* App title */}
+          <div className="px-4 py-4 border-b border-gray-800">
+            <div className="flex items-center gap-2">
+              <Database className="h-5 w-5 text-blue-400" />
+              <h1 className="text-sm font-semibold text-white tracking-tight">Inscriptions</h1>
+            </div>
+          </div>
+
+          {/* Navigation */}
+          <nav className="flex-1 px-2 py-3 space-y-0.5">
+            <NavLink to="/" end className={navLinkClass}>
+              <HomeIcon className="h-4 w-4" />
+              Accueil
+            </NavLink>
+            <NavLink to="/add" className={navLinkClass}>
+              <PlusCircle className="h-4 w-4" />
+              Nouvelle inscription
+            </NavLink>
+            <NavLink to="/registrations" className={navLinkClass}>
+              <ClipboardList className="h-4 w-4" />
+              Liste
+            </NavLink>
+          </nav>
+
+          {/* Version footer */}
+          <div className="px-4 py-3 border-t border-gray-800">
+            <p className="text-[10px] text-gray-500 uppercase tracking-wider">Gestion Inscription v1.0</p>
+          </div>
+        </aside>
+
+        {/* Main content */}
+        <main className="flex-1 overflow-auto bg-gray-100">
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/add" element={<RegistrationForm />} />
@@ -18,49 +57,6 @@ function App() {
             <Route path="/registrations" element={<RegistrationList />} />
           </Routes>
         </main>
-        <footer className="bg-gray-800 text-white mt-auto">
-          <div className="container mx-auto px-4 py-8">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div>
-                <h3 className="text-lg font-semibold mb-4">À propos</h3>
-                <p className="text-gray-300">
-                  Système de gestion des inscriptions simple et efficace pour vos besoins administratifs.
-                </p>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold mb-4">Contact</h3>
-                <p className="text-gray-300">
-                  Pour toute assistance, n'hésitez pas à nous contacter.
-                </p>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold mb-4">Liens rapides</h3>
-                <ul className="space-y-2">
-                  <li>
-                    <Link to="/" className="text-gray-300 hover:text-white transition-colors">
-                      Accueil
-                    </Link>
-                  </li>
-                  <li>
-                    <Link to="/add" className="text-gray-300 hover:text-white transition-colors">
-                      Nouvelle inscription
-                    </Link>
-                  </li>
-                  <li>
-                    <Link to="/registrations" className="text-gray-300 hover:text-white transition-colors">
-                      Liste des inscriptions
-                    </Link>
-                  </li>
-                </ul>
-              </div>
-            </div>
-            <div className="border-t border-gray-700 mt-8 pt-8 text-center">
-              <p className="text-gray-300">
-                Système de Gestion des Inscriptions © {new Date().getFullYear()}
-              </p>
-            </div>
-          </div>
-        </footer>
       </div>
     </Router>
   );
