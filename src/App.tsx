@@ -4,6 +4,7 @@ import { ClipboardList, PlusCircle, Home as HomeIcon, Database } from 'lucide-re
 import Home from './pages/Home';
 import RegistrationForm from './components/RegistrationForm';
 import RegistrationList from './components/RegistrationList';
+import AuthGate from './components/AuthGate';
 
 function App() {
   const navLinkClass = ({ isActive }: { isActive: boolean }) =>
@@ -14,6 +15,7 @@ function App() {
     }`;
 
   return (
+    <AuthGate>
     <Router>
       <div className="h-full flex">
         {/* Sidebar */}
@@ -59,6 +61,7 @@ function App() {
         </main>
       </div>
     </Router>
+    </AuthGate>
   );
 }
 
