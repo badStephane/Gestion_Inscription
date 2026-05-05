@@ -70,6 +70,8 @@ const RegistrationList: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterPayment, setFilterPayment] = useState('');
   const [filterActivity, setFilterActivity] = useState('');
+  const [filterDateFrom, setFilterDateFrom] = useState('');
+  const [filterDateTo, setFilterDateTo] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
@@ -88,7 +90,7 @@ const RegistrationList: React.FC = () => {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, filterPayment, filterActivity, sortKey, sortDirection, pageSize]);
+  }, [searchTerm, filterPayment, filterActivity, filterDateFrom, filterDateTo, sortKey, sortDirection, pageSize]);
 
   useEffect(() => {
     let cancelled = false;
@@ -118,7 +120,7 @@ const RegistrationList: React.FC = () => {
 
   useEffect(() => {
     applyFilters();
-  }, [searchTerm, filterPayment, filterActivity, registrations, sortKey, sortDirection]);
+  }, [searchTerm, filterPayment, filterActivity, filterDateFrom, filterDateTo, registrations, sortKey, sortDirection]);
 
   const applyFilters = () => {
     let filtered = [...registrations];
@@ -139,6 +141,14 @@ const RegistrationList: React.FC = () => {
 
     if (filterActivity) {
       filtered = filtered.filter(reg => reg.activityId === filterActivity);
+    }
+
+    if (filterDateFrom) {
+      filtered = filtered.filter(reg => reg.registrationDate >= filterDateFrom);
+    }
+
+    if (filterDateTo) {
+      filtered = filtered.filter(reg => reg.registrationDate <= filterDateTo);
     }
 
     if (sortKey) {
@@ -175,9 +185,30 @@ const RegistrationList: React.FC = () => {
   };
 
   const handleExport = () => {
-    if (filteredRegistrations.length > 0) {
-      exportToExcel(filteredRegistrations, activities);
+    if (filteredRegistrations.length === 0) return;
+
+    const slugify = (s: string) =>
+      s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+    const parts: string[] = [];
+    if (filterActivity) {
+      const a = activitiesById[filterActivity];
+      if (a) parts.push(slugify(a.name));
+    } else {
+      parts.push('inscriptions');
     }
+    if (filterDateFrom && filterDateTo) {
+      parts.push(`${filterDateFrom}_au_${filterDateTo}`);
+    } else if (filterDateFrom) {
+      parts.push(`depuis_${filterDateFrom}`);
+    } else if (filterDateTo) {
+      parts.push(`jusqu_${filterDateTo}`);
+    } else {
+      parts.push(new Date().toISOString().split('T')[0]);
+    }
+    const filename = parts.filter(Boolean).join('_');
+
+    exportToExcel(filteredRegistrations, activities, filename);
   };
 
   const confirmDelete = async () => {
@@ -369,6 +400,30 @@ const RegistrationList: React.FC = () => {
           <option value="orange_money">Orange Money</option>
         </select>
 
+        {/* Date range */}
+        <label className="flex items-center gap-1 text-xs text-gray-600">
+          Du
+          <input
+            type="date"
+            value={filterDateFrom}
+            onChange={(e) => setFilterDateFrom(e.target.value)}
+            max={filterDateTo || undefined}
+            aria-label="Date de début"
+            className="input-field w-auto py-1"
+          />
+        </label>
+        <label className="flex items-center gap-1 text-xs text-gray-600">
+          Au
+          <input
+            type="date"
+            value={filterDateTo}
+            onChange={(e) => setFilterDateTo(e.target.value)}
+            min={filterDateFrom || undefined}
+            aria-label="Date de fin"
+            className="input-field w-auto py-1"
+          />
+        </label>
+
         <div className="h-4 w-px bg-gray-300 mx-1"></div>
 
         {/* Actions */}
@@ -403,13 +458,19 @@ const RegistrationList: React.FC = () => {
           <div className="flex flex-col items-center justify-center h-64 text-gray-400">
             <ClipboardList className="h-10 w-10 mb-3 text-gray-300" />
             <p className="text-sm font-medium text-gray-500">
-              {(searchTerm || filterPayment || filterActivity)
+              {(searchTerm || filterPayment || filterActivity || filterDateFrom || filterDateTo)
                 ? 'Aucun resultat pour ces filtres'
                 : 'Aucune inscription pour le moment'}
             </p>
-            {(searchTerm || filterPayment || filterActivity) ? (
+            {(searchTerm || filterPayment || filterActivity || filterDateFrom || filterDateTo) ? (
               <button
-                onClick={() => { setSearchTerm(''); setFilterPayment(''); setFilterActivity(''); }}
+                onClick={() => {
+                  setSearchTerm('');
+                  setFilterPayment('');
+                  setFilterActivity('');
+                  setFilterDateFrom('');
+                  setFilterDateTo('');
+                }}
                 className="mt-3 btn btn-default"
               >
                 Effacer les filtres

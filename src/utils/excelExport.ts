@@ -7,7 +7,11 @@ const PAYMENT_LABEL: Record<Registration['paymentType'], string> = {
   orange_money: 'Orange Money',
 };
 
-export const exportToExcel = (registrations: Registration[], activities: Activity[]): void => {
+export const exportToExcel = (
+  registrations: Registration[],
+  activities: Activity[],
+  filename?: string
+): void => {
   const activityNameById: Record<string, string> = {};
   for (const a of activities) activityNameById[a.id] = a.name;
 
@@ -29,5 +33,6 @@ export const exportToExcel = (registrations: Registration[], activities: Activit
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Inscriptions');
 
   const today = new Date().toISOString().split('T')[0];
-  XLSX.writeFile(workbook, `inscriptions_${today}.xlsx`);
+  const finalName = filename ?? `inscriptions_${today}`;
+  XLSX.writeFile(workbook, `${finalName}.xlsx`);
 };
