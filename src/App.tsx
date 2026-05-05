@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import Header from './components/Header';
 import Home from './pages/Home';
 import RegistrationForm from './components/RegistrationForm';
@@ -37,19 +37,19 @@ function App() {
                 <h3 className="text-lg font-semibold mb-4">Liens rapides</h3>
                 <ul className="space-y-2">
                   <li>
-                    <a href="/" className="text-gray-300 hover:text-white transition-colors">
+                    <Link to="/" className="text-gray-300 hover:text-white transition-colors">
                       Accueil
-                    </a>
+                    </Link>
                   </li>
                   <li>
-                    <a href="/add" className="text-gray-300 hover:text-white transition-colors">
+                    <Link to="/add" className="text-gray-300 hover:text-white transition-colors">
                       Nouvelle inscription
-                    </a>
+                    </Link>
                   </li>
                   <li>
-                    <a href="/registrations" className="text-gray-300 hover:text-white transition-colors">
+                    <Link to="/registrations" className="text-gray-300 hover:text-white transition-colors">
                       Liste des inscriptions
-                    </a>
+                    </Link>
                   </li>
                 </ul>
               </div>
