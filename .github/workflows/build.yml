@@ -24,6 +24,9 @@ jobs:
     runs-on: ${{ matrix.platform }}
     permissions:
       contents: write
+    env:
+      # Opt-in to Node 24 for JavaScript-based actions (Node 20 deprecated by GitHub)
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
     steps:
       - name: Checkout
