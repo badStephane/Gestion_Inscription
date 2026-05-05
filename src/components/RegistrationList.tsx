@@ -15,7 +15,11 @@ import {
   ChevronUp,
   ChevronDown,
   ChevronsUpDown,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
+
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
 type SortKey = 'name' | 'date' | 'amount' | 'payment';
 type SortDirection = 'asc' | 'desc';
@@ -52,6 +56,12 @@ const RegistrationList: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterPayment, sortKey, sortDirection, pageSize]);
 
   useEffect(() => {
     let cancelled = false;
@@ -171,6 +181,12 @@ const RegistrationList: React.FC = () => {
       alert('Erreur lors de la restauration de la base de données.');
     }
   };
+
+  const totalPages = Math.max(1, Math.ceil(filteredRegistrations.length / pageSize));
+  const safePage = Math.min(currentPage, totalPages);
+  const startIndex = (safePage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, filteredRegistrations.length);
+  const paginatedRegistrations = filteredRegistrations.slice(startIndex, endIndex);
 
   if (isLoading) {
     return (
@@ -339,7 +355,7 @@ const RegistrationList: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredRegistrations.map(registration => (
+              {paginatedRegistrations.map(registration => (
                 <tr key={registration.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">
@@ -399,9 +415,54 @@ const RegistrationList: React.FC = () => {
         </div>
       )}
       
-      <div className="mt-4 text-sm text-gray-500">
-        Affichage de {filteredRegistrations.length} inscription(s) sur {registrations.length} au total
-      </div>
+      {filteredRegistrations.length > 0 && (
+        <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-sm text-gray-600">
+          <div>
+            Affichage de <span className="font-medium">{startIndex + 1}</span>–<span className="font-medium">{endIndex}</span> sur{' '}
+            <span className="font-medium">{filteredRegistrations.length}</span>
+            {filteredRegistrations.length !== registrations.length && (
+              <> (sur {registrations.length} au total)</>
+            )}
+          </div>
+
+          <div className="flex items-center gap-3">
+            <label className="flex items-center gap-2">
+              <span>Lignes par page:</span>
+              <select
+                value={pageSize}
+                onChange={(e) => setPageSize(Number(e.target.value))}
+                className="border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                {PAGE_SIZE_OPTIONS.map(size => (
+                  <option key={size} value={size}>{size}</option>
+                ))}
+              </select>
+            </label>
+
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={safePage === 1}
+                className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                aria-label="Page précédente"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <span className="px-2">
+                Page <span className="font-medium">{safePage}</span> / {totalPages}
+              </span>
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={safePage === totalPages}
+                className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                aria-label="Page suivante"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
