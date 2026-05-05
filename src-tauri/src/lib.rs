@@ -37,6 +37,14 @@ pub fn run() {
             );",
       kind: MigrationKind::Up,
     },
+    Migration {
+      version: 4,
+      description: "add_recovery_code_columns",
+      sql: "ALTER TABLE auth_settings ADD COLUMN recovery_hash TEXT;
+            ALTER TABLE auth_settings ADD COLUMN recovery_salt TEXT;
+            ALTER TABLE auth_settings ADD COLUMN recovery_iterations INTEGER;",
+      kind: MigrationKind::Up,
+    },
   ];
 
   tauri::Builder::default()
