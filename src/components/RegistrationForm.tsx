@@ -177,8 +177,20 @@ const RegistrationForm: React.FC = () => {
 
   if (isLoadingExisting) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-500 border-t-transparent"></div>
+      <div className="p-6 max-w-2xl" aria-busy="true">
+        <div className="panel p-4 space-y-4">
+          <div className="skeleton h-8 w-48 rounded" />
+          <div className="grid grid-cols-2 gap-3">
+            <div className="skeleton h-9 rounded" />
+            <div className="skeleton h-9 rounded" />
+          </div>
+          <div className="skeleton h-9 rounded" />
+          <div className="skeleton h-16 rounded" />
+          <div className="grid grid-cols-2 gap-3">
+            <div className="skeleton h-9 rounded" />
+            <div className="skeleton h-9 rounded" />
+          </div>
+        </div>
       </div>
     );
   }
@@ -200,13 +212,6 @@ const RegistrationForm: React.FC = () => {
 
   return (
     <div className="p-6 max-w-2xl">
-      {/* Page header */}
-      <div className="mb-4">
-        <h1 className="text-lg font-semibold text-gray-800">
-          {isEditMode ? "Modifier l'inscription" : 'Nouvelle inscription'}
-        </h1>
-      </div>
-
       {isSuccess ? (
         <div className="panel p-8 text-center">
           <CheckCircle className="h-10 w-10 text-emerald-500 mx-auto mb-3" />

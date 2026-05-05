@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, NavLink } from 'react-router-dom';
-import { ClipboardList, PlusCircle, Home as HomeIcon, Database, Lock, KeyRound, LifeBuoy, CalendarDays } from 'lucide-react';
+import { BrowserRouter as Router, Routes, Route, NavLink, useLocation } from 'react-router-dom';
+import { ClipboardList, PlusCircle, Home as HomeIcon, Database, Lock, KeyRound, LifeBuoy, CalendarDays, Menu, X } from 'lucide-react';
 import Home from './pages/Home';
 import Activities from './pages/Activities';
 import RegistrationForm from './components/RegistrationForm';
@@ -12,46 +12,90 @@ import RecoveryCodeModal from './components/RecoveryCodeModal';
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   `flex items-center gap-2 px-3 py-2.5 min-h-[44px] rounded text-sm transition-colors duration-100 ${
     isActive
-      ? 'bg-gray-700/60 text-white font-medium'
-      : 'text-gray-300 hover:bg-gray-700/40 hover:text-white'
+      ? 'bg-gray-700/60 text-white font-medium border-l-2 border-blue-400 -ml-px'
+      : 'text-gray-300 hover:bg-gray-700/40 hover:text-white border-l-2 border-transparent -ml-px'
   }`;
 
 const accountActionClass =
   'w-full flex items-center gap-2 px-3 py-2.5 min-h-[44px] rounded text-sm text-gray-300 hover:bg-gray-700/40 hover:text-white transition-colors';
 
+const PAGE_TITLES: Record<string, string> = {
+  '/': 'Tableau de bord',
+  '/add': 'Nouvelle inscription',
+  '/registrations': 'Liste des inscriptions',
+  '/activities': 'Activités',
+};
+
+function PageHeader() {
+  const location = useLocation();
+  const path = location.pathname;
+  const title = path.startsWith('/edit/')
+    ? "Modifier l'inscription"
+    : PAGE_TITLES[path] || '';
+
+  if (!title) return null;
+
+  return (
+    <div className="px-6 pt-5 pb-0">
+      <h1 className="text-lg font-semibold text-gray-800">{title}</h1>
+    </div>
+  );
+}
+
 function AppShell() {
   const { lock } = useAuth();
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const [recoveryCodeOpen, setRecoveryCodeOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
     <Router>
       <div className="h-full flex">
+        {/* Mobile overlay */}
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 z-40 bg-black/40 lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+
         {/* Sidebar */}
-        <aside className="w-52 flex-shrink-0 bg-gray-900 flex flex-col border-r border-gray-800">
+        <aside className={`
+          fixed inset-y-0 left-0 z-50 w-52 bg-gray-900 flex flex-col border-r border-gray-800
+          transform transition-transform duration-200 ease-out
+          lg:relative lg:translate-x-0 lg:z-auto
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        `}>
           {/* App title */}
-          <div className="px-4 py-4 border-b border-gray-800">
+          <div className="px-4 py-4 border-b border-gray-800 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Database className="h-5 w-5 text-blue-400" />
               <h1 className="text-sm font-semibold text-white tracking-tight">Inscriptions</h1>
             </div>
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="lg:hidden text-gray-400 hover:text-white"
+              aria-label="Fermer le menu"
+            >
+              <X className="h-5 w-5" />
+            </button>
           </div>
 
           {/* Navigation */}
           <nav className="flex-1 px-2 py-3 space-y-0.5">
-            <NavLink to="/" end className={navLinkClass}>
+            <NavLink to="/" end className={navLinkClass} onClick={() => setSidebarOpen(false)}>
               <HomeIcon className="h-4 w-4" />
               Accueil
             </NavLink>
-            <NavLink to="/add" className={navLinkClass}>
+            <NavLink to="/add" className={navLinkClass} onClick={() => setSidebarOpen(false)}>
               <PlusCircle className="h-4 w-4" />
               Nouvelle inscription
             </NavLink>
-            <NavLink to="/registrations" className={navLinkClass}>
+            <NavLink to="/registrations" className={navLinkClass} onClick={() => setSidebarOpen(false)}>
               <ClipboardList className="h-4 w-4" />
               Liste
             </NavLink>
-            <NavLink to="/activities" className={navLinkClass}>
+            <NavLink to="/activities" className={navLinkClass} onClick={() => setSidebarOpen(false)}>
               <CalendarDays className="h-4 w-4" />
               Activités
             </NavLink>
@@ -80,14 +124,33 @@ function AppShell() {
         </aside>
 
         {/* Main content */}
-        <main className="flex-1 overflow-auto bg-gray-100">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/add" element={<RegistrationForm />} />
-            <Route path="/edit/:id" element={<RegistrationForm />} />
-            <Route path="/registrations" element={<RegistrationList />} />
-            <Route path="/activities" element={<Activities />} />
-          </Routes>
+        <main className="flex-1 overflow-auto bg-gray-100 flex flex-col min-w-0">
+          {/* Mobile top bar */}
+          <div className="lg:hidden flex items-center gap-3 px-4 py-3 border-b border-gray-200 bg-white">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="p-1 -ml-1 text-gray-600 hover:text-gray-900"
+              aria-label="Ouvrir le menu"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+            <div className="flex items-center gap-2">
+              <Database className="h-4 w-4 text-blue-500" />
+              <span className="text-sm font-semibold text-gray-800">Inscriptions</span>
+            </div>
+          </div>
+
+          <PageHeader />
+
+          <div className="flex-1 overflow-auto">
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/add" element={<RegistrationForm />} />
+              <Route path="/edit/:id" element={<RegistrationForm />} />
+              <Route path="/registrations" element={<RegistrationList />} />
+              <Route path="/activities" element={<Activities />} />
+            </Routes>
+          </div>
         </main>
       </div>
 

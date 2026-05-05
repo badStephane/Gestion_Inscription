@@ -19,6 +19,8 @@ import {
   ChevronsUpDown,
   ChevronLeft,
   ChevronRight,
+  ClipboardList,
+  PlusCircle,
 } from 'lucide-react';
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
@@ -398,15 +400,25 @@ const RegistrationList: React.FC = () => {
       {/* Table */}
       <div className="flex-1 overflow-auto">
         {filteredRegistrations.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-48 text-gray-400">
-            <p className="text-sm">Aucune inscription trouvee</p>
-            {(searchTerm || filterPayment || filterActivity) && (
+          <div className="flex flex-col items-center justify-center h-64 text-gray-400">
+            <ClipboardList className="h-10 w-10 mb-3 text-gray-300" />
+            <p className="text-sm font-medium text-gray-500">
+              {(searchTerm || filterPayment || filterActivity)
+                ? 'Aucun resultat pour ces filtres'
+                : 'Aucune inscription pour le moment'}
+            </p>
+            {(searchTerm || filterPayment || filterActivity) ? (
               <button
                 onClick={() => { setSearchTerm(''); setFilterPayment(''); setFilterActivity(''); }}
-                className="mt-2 text-xs text-blue-600 hover:underline"
+                className="mt-3 btn btn-default"
               >
                 Effacer les filtres
               </button>
+            ) : (
+              <a href="/add" className="mt-3 btn btn-primary">
+                <PlusCircle className="h-3.5 w-3.5" />
+                Nouvelle inscription
+              </a>
             )}
           </div>
         ) : (
