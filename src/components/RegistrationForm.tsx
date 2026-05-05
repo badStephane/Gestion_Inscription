@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { addRegistration, getRegistrationById, updateRegistration } from '../utils/storage';
-import { CheckCircle, AlertCircle } from 'lucide-react';
+import { CheckCircle, AlertCircle, Save, X } from 'lucide-react';
 
 interface FormState {
   firstName: string;
@@ -75,13 +75,13 @@ const RegistrationForm: React.FC = () => {
     const newErrors: Record<string, string> = {};
 
     if (!formData.lastName.trim()) newErrors.lastName = 'Le nom est requis';
-    if (!formData.firstName.trim()) newErrors.firstName = 'Le prénom est requis';
+    if (!formData.firstName.trim()) newErrors.firstName = 'Le prenom est requis';
 
     const phoneDigits = (formData.phone.match(PHONE_DIGITS_RE) || []).length;
     if (!formData.phone.trim()) {
-      newErrors.phone = 'Le téléphone est requis';
+      newErrors.phone = 'Le telephone est requis';
     } else if (phoneDigits < 8) {
-      newErrors.phone = 'Numéro de téléphone invalide (au moins 8 chiffres)';
+      newErrors.phone = 'Au moins 8 chiffres';
     }
 
     if (formData.email.trim() && !EMAIL_RE.test(formData.email.trim())) {
@@ -89,13 +89,13 @@ const RegistrationForm: React.FC = () => {
     }
 
     if (!formData.address.trim()) newErrors.address = "L'adresse est requise";
-    if (!formData.registrationDate) newErrors.registrationDate = "La date d'inscription est requise";
+    if (!formData.registrationDate) newErrors.registrationDate = 'La date est requise';
 
     const amountNum = parseFloat(formData.amount.replace(',', '.'));
     if (!formData.amount.trim()) {
       newErrors.amount = 'Le montant est requis';
     } else if (Number.isNaN(amountNum) || amountNum <= 0) {
-      newErrors.amount = 'Le montant doit être un nombre positif';
+      newErrors.amount = 'Montant invalide';
     }
 
     setErrors(newErrors);
@@ -144,7 +144,7 @@ const RegistrationForm: React.FC = () => {
         setTimeout(() => {
           setIsSuccess(false);
           navigate('/registrations');
-        }, 1500);
+        }, 1200);
       } catch (error) {
         console.error('Error saving registration:', error);
       } finally {
@@ -153,223 +153,217 @@ const RegistrationForm: React.FC = () => {
     }
   };
 
-  const fieldClass = (hasError: boolean) =>
-    `w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-      hasError ? 'border-red-500' : 'border-gray-300'
-    }`;
-
   if (isLoadingExisting) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-500 border-t-transparent"></div>
       </div>
     );
   }
 
   if (notFound) {
     return (
-      <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-md p-6 my-8 text-center">
-        <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">Inscription introuvable</h2>
-        <p className="text-gray-600 mb-6">L'inscription demandée n'existe pas ou a été supprimée.</p>
-        <button
-          onClick={() => navigate('/registrations')}
-          className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-        >
-          Retour à la liste
-        </button>
+      <div className="p-6">
+        <div className="panel p-8 text-center max-w-md mx-auto">
+          <AlertCircle className="h-10 w-10 text-red-500 mx-auto mb-3" />
+          <h2 className="text-base font-semibold text-gray-800 mb-1">Inscription introuvable</h2>
+          <p className="text-sm text-gray-500 mb-4">L'inscription demandee n'existe pas ou a ete supprimee.</p>
+          <button onClick={() => navigate('/registrations')} className="btn btn-primary">
+            Retour a la liste
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-md p-6 my-8 transition-all duration-300">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">
-        {isEditMode ? "Modifier l'Inscription" : 'Nouvelle Inscription'}
-      </h2>
+    <div className="p-6 max-w-2xl">
+      {/* Page header */}
+      <div className="mb-4">
+        <h1 className="text-lg font-semibold text-gray-800">
+          {isEditMode ? "Modifier l'inscription" : 'Nouvelle inscription'}
+        </h1>
+      </div>
 
       {isSuccess ? (
-        <div className="flex flex-col items-center justify-center py-8 text-center text-green-600 space-y-3 animate-appear">
-          <CheckCircle className="h-16 w-16" />
-          <p className="text-xl font-medium">
-            {isEditMode ? 'Inscription modifiée avec succès!' : 'Inscription enregistrée avec succès!'}
+        <div className="panel p-8 text-center">
+          <CheckCircle className="h-10 w-10 text-emerald-500 mx-auto mb-3" />
+          <p className="text-base font-medium text-emerald-700">
+            {isEditMode ? 'Inscription modifiee!' : 'Inscription enregistree!'}
           </p>
-          <p className="text-gray-600">Vous serez redirigé vers la liste des inscriptions...</p>
+          <p className="text-xs text-gray-500 mt-1">Redirection...</p>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
-                Nom <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                id="lastName"
-                name="lastName"
-                value={formData.lastName}
-                onChange={handleChange}
-                className={fieldClass(!!errors.lastName)}
-              />
-              {errors.lastName && <p className="mt-1 text-sm text-red-500">{errors.lastName}</p>}
-            </div>
-
-            <div>
-              <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
-                Prénoms <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                id="firstName"
-                name="firstName"
-                value={formData.firstName}
-                onChange={handleChange}
-                className={fieldClass(!!errors.firstName)}
-              />
-              {errors.firstName && <p className="mt-1 text-sm text-red-500">{errors.firstName}</p>}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                Téléphone <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="tel"
-                id="phone"
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-                placeholder="07 07 07 07 07"
-                className={fieldClass(!!errors.phone)}
-              />
-              {errors.phone && <p className="mt-1 text-sm text-red-500">{errors.phone}</p>}
-            </div>
-
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                Email <span className="text-gray-400 text-xs">(optionnel)</span>
-              </label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="exemple@email.com"
-                className={fieldClass(!!errors.email)}
-              />
-              {errors.email && <p className="mt-1 text-sm text-red-500">{errors.email}</p>}
-            </div>
-          </div>
-
-          <div>
-            <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
-              Adresse <span className="text-red-500">*</span>
-            </label>
-            <textarea
-              id="address"
-              name="address"
-              value={formData.address}
-              onChange={handleChange}
-              rows={3}
-              className={fieldClass(!!errors.address)}
-            />
-            {errors.address && <p className="mt-1 text-sm text-red-500">{errors.address}</p>}
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label htmlFor="registrationDate" className="block text-sm font-medium text-gray-700 mb-1">
-                Date d'inscription <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="date"
-                id="registrationDate"
-                name="registrationDate"
-                value={formData.registrationDate}
-                onChange={handleChange}
-                className={fieldClass(!!errors.registrationDate)}
-              />
-              {errors.registrationDate && <p className="mt-1 text-sm text-red-500">{errors.registrationDate}</p>}
-            </div>
-
-            <div>
-              <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-1">
-                Montant (F CFA) <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="number"
-                id="amount"
-                name="amount"
-                value={formData.amount}
-                onChange={handleChange}
-                min="0"
-                step="any"
-                placeholder="0"
-                className={fieldClass(!!errors.amount)}
-              />
-              {errors.amount && <p className="mt-1 text-sm text-red-500">{errors.amount}</p>}
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Type de paiement <span className="text-red-500">*</span>
-            </label>
-            <div className="flex space-x-4">
-              <div className="flex items-center">
-                <input
-                  type="radio"
-                  id="paymentCash"
-                  name="paymentType"
-                  value="cash"
-                  checked={formData.paymentType === 'cash'}
-                  onChange={handleChange}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                />
-                <label htmlFor="paymentCash" className="ml-2 block text-sm text-gray-700">
-                  Espèce
+        <form onSubmit={handleSubmit} className="panel">
+          <div className="p-4 space-y-4">
+            {/* Row: Nom + Prenom */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="lastName" className="block text-xs font-medium text-gray-600 mb-1">
+                  Nom <span className="text-red-500">*</span>
                 </label>
+                <input
+                  type="text"
+                  id="lastName"
+                  name="lastName"
+                  value={formData.lastName}
+                  onChange={handleChange}
+                  className={`input-field ${errors.lastName ? 'has-error' : ''}`}
+                />
+                {errors.lastName && <p className="mt-0.5 text-xs text-red-500">{errors.lastName}</p>}
               </div>
-              <div className="flex items-center">
-                <input
-                  type="radio"
-                  id="paymentWave"
-                  name="paymentType"
-                  value="wave"
-                  checked={formData.paymentType === 'wave'}
-                  onChange={handleChange}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                />
-                <label htmlFor="paymentWave" className="ml-2 block text-sm text-gray-700">
-                  Wave
+              <div>
+                <label htmlFor="firstName" className="block text-xs font-medium text-gray-600 mb-1">
+                  Prenoms <span className="text-red-500">*</span>
                 </label>
+                <input
+                  type="text"
+                  id="firstName"
+                  name="firstName"
+                  value={formData.firstName}
+                  onChange={handleChange}
+                  className={`input-field ${errors.firstName ? 'has-error' : ''}`}
+                />
+                {errors.firstName && <p className="mt-0.5 text-xs text-red-500">{errors.firstName}</p>}
               </div>
             </div>
+
+            {/* Row: Phone + Email */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="phone" className="block text-xs font-medium text-gray-600 mb-1">
+                  Telephone <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="tel"
+                  id="phone"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  placeholder="07 07 07 07 07"
+                  className={`input-field ${errors.phone ? 'has-error' : ''}`}
+                />
+                {errors.phone && <p className="mt-0.5 text-xs text-red-500">{errors.phone}</p>}
+              </div>
+              <div>
+                <label htmlFor="email" className="block text-xs font-medium text-gray-600 mb-1">
+                  Email <span className="text-gray-400">(optionnel)</span>
+                </label>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="exemple@email.com"
+                  className={`input-field ${errors.email ? 'has-error' : ''}`}
+                />
+                {errors.email && <p className="mt-0.5 text-xs text-red-500">{errors.email}</p>}
+              </div>
+            </div>
+
+            {/* Address */}
+            <div>
+              <label htmlFor="address" className="block text-xs font-medium text-gray-600 mb-1">
+                Adresse <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                id="address"
+                name="address"
+                value={formData.address}
+                onChange={handleChange}
+                rows={2}
+                className={`input-field resize-none ${errors.address ? 'has-error' : ''}`}
+              />
+              {errors.address && <p className="mt-0.5 text-xs text-red-500">{errors.address}</p>}
+            </div>
+
+            {/* Row: Date + Amount */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="registrationDate" className="block text-xs font-medium text-gray-600 mb-1">
+                  Date d'inscription <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  id="registrationDate"
+                  name="registrationDate"
+                  value={formData.registrationDate}
+                  onChange={handleChange}
+                  className={`input-field ${errors.registrationDate ? 'has-error' : ''}`}
+                />
+                {errors.registrationDate && <p className="mt-0.5 text-xs text-red-500">{errors.registrationDate}</p>}
+              </div>
+              <div>
+                <label htmlFor="amount" className="block text-xs font-medium text-gray-600 mb-1">
+                  Montant (F CFA) <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  id="amount"
+                  name="amount"
+                  value={formData.amount}
+                  onChange={handleChange}
+                  min="0"
+                  step="any"
+                  placeholder="0"
+                  className={`input-field ${errors.amount ? 'has-error' : ''}`}
+                />
+                {errors.amount && <p className="mt-0.5 text-xs text-red-500">{errors.amount}</p>}
+              </div>
+            </div>
+
+            {/* Payment type */}
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-2">
+                Type de paiement <span className="text-red-500">*</span>
+              </label>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="paymentType"
+                    value="cash"
+                    checked={formData.paymentType === 'cash'}
+                    onChange={handleChange}
+                    className="h-3.5 w-3.5 text-blue-600 border-gray-300"
+                  />
+                  <span className="text-sm text-gray-700">Espece</span>
+                </label>
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="paymentType"
+                    value="wave"
+                    checked={formData.paymentType === 'wave'}
+                    onChange={handleChange}
+                    className="h-3.5 w-3.5 text-blue-600 border-gray-300"
+                  />
+                  <span className="text-sm text-gray-700">Wave</span>
+                </label>
+              </div>
+            </div>
           </div>
 
-          <div className="flex justify-end space-x-3 pt-4 border-t">
+          {/* Form actions toolbar */}
+          <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-gray-200 bg-gray-50 rounded-b">
             <button
               type="button"
               onClick={() => navigate('/registrations')}
-              className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+              className="btn btn-default"
             >
+              <X className="h-3.5 w-3.5" />
               Annuler
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className={`px-6 py-2 bg-blue-600 text-white rounded-lg ${
-                isSubmitting
-                  ? 'opacity-70 cursor-not-allowed'
-                  : 'hover:bg-blue-700 active:bg-blue-800'
-              } transition-colors shadow-sm`}
+              className={`btn btn-primary ${isSubmitting ? 'opacity-60 pointer-events-none' : ''}`}
             >
+              <Save className="h-3.5 w-3.5" />
               {isSubmitting
-                ? isEditMode ? 'Mise à jour...' : 'Enregistrement...'
-                : isEditMode ? 'Mettre à jour' : 'Enregistrer'}
+                ? isEditMode ? 'Mise a jour...' : 'Enregistrement...'
+                : isEditMode ? 'Mettre a jour' : 'Enregistrer'}
             </button>
           </div>
         </form>
