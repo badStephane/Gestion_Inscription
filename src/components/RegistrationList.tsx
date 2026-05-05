@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { getRegistrations, deleteRegistration } from '../utils/storage';
 import { exportToExcel } from '../utils/excelExport';
+import { exportDatabase, importDatabase } from '../utils/dbBackup';
 import { Registration } from '../types';
-import { Download, Search, Trash2, Filter } from 'lucide-react';
+import { Download, Search, Trash2, Filter, Save, Upload } from 'lucide-react';
 
 const RegistrationList: React.FC = () => {
   const [registrations, setRegistrations] = useState<Registration[]>([]);
@@ -79,6 +80,33 @@ const RegistrationList: React.FC = () => {
     setShowFilters(false);
   };
 
+  const handleBackup = async () => {
+    try {
+      const ok = await exportDatabase();
+      if (ok) alert('Base de données sauvegardée avec succès.');
+    } catch (error) {
+      console.error('Error exporting database:', error);
+      alert('Erreur lors de la sauvegarde de la base de données.');
+    }
+  };
+
+  const handleRestore = async () => {
+    const confirmed = window.confirm(
+      'Restaurer une base de données va REMPLACER toutes les inscriptions actuelles. Continuer ?'
+    );
+    if (!confirmed) return;
+    try {
+      const ok = await importDatabase();
+      if (ok) {
+        alert('Base de données restaurée. L\'application va redémarrer.');
+        window.location.reload();
+      }
+    } catch (error) {
+      console.error('Error importing database:', error);
+      alert('Erreur lors de la restauration de la base de données.');
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -92,7 +120,7 @@ const RegistrationList: React.FC = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 border-b pb-4">
         <h2 className="text-2xl font-bold text-gray-800 mb-3 sm:mb-0">Liste des Inscriptions</h2>
         
-        <div className="flex flex-col sm:flex-row gap-2">
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setShowFilters(!showFilters)}
             className="flex items-center px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
@@ -112,6 +140,24 @@ const RegistrationList: React.FC = () => {
           >
             <Download className="h-4 w-4 mr-1" />
             Exporter Excel
+          </button>
+
+          <button
+            onClick={handleBackup}
+            title="Sauvegarder la base de données dans un fichier .db"
+            className="flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+          >
+            <Save className="h-4 w-4 mr-1" />
+            Sauvegarder BD
+          </button>
+
+          <button
+            onClick={handleRestore}
+            title="Restaurer la base de données depuis un fichier .db"
+            className="flex items-center px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors"
+          >
+            <Upload className="h-4 w-4 mr-1" />
+            Restaurer BD
           </button>
         </div>
       </div>
