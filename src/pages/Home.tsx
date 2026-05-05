@@ -82,8 +82,8 @@ const Home: React.FC = () => {
             <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Montant total</p>
             <p className="text-2xl font-bold text-gray-900 tabular-nums">{formatAmount(stats.totalAmount)}</p>
           </div>
-          <div className="panel p-4 border-l-2 border-l-purple-400">
-            <p className="text-xs text-purple-700 uppercase tracking-wide mb-1">Wave</p>
+          <div className="panel p-4 border-l-2 border-l-blue-400">
+            <p className="text-xs text-blue-700 uppercase tracking-wide mb-1">Wave</p>
             <p className="text-2xl font-bold text-gray-900 tabular-nums">{stats.waveCount}</p>
             <p className="text-xs text-gray-500 tabular-nums mt-0.5">{formatAmount(stats.waveAmount)}</p>
           </div>

@@ -38,7 +38,7 @@ const PAYMENT_LABEL: Record<Registration['paymentType'], string> = {
 };
 
 const PAYMENT_BADGE_CLASS: Record<Registration['paymentType'], string> = {
-  wave: 'bg-purple-100 text-purple-700',
+  wave: 'bg-blue-100 text-blue-700',
   cash: 'bg-emerald-100 text-emerald-700',
   orange_money: 'bg-orange-100 text-orange-700',
 };
@@ -307,8 +307,8 @@ const RegistrationList: React.FC = () => {
             <div className="text-[10px] font-medium uppercase tracking-wider text-gray-500">Montant total</div>
             <div className="text-base font-semibold text-gray-900 tabular-nums mt-0.5">{formatAmount(stats.totalAmount)}</div>
           </div>
-          <div className="panel px-3 py-2 border-l-2 border-l-purple-400">
-            <div className="text-[10px] font-medium uppercase tracking-wider text-purple-700">Wave</div>
+          <div className="panel px-3 py-2 border-l-2 border-l-blue-400">
+            <div className="text-[10px] font-medium uppercase tracking-wider text-blue-700">Wave</div>
             <div className="text-base font-semibold text-gray-900 tabular-nums mt-0.5">
               {stats.waveCount} <span className="text-xs font-normal text-gray-500">· {formatAmount(stats.waveAmount)}</span>
             </div>
