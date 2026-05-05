@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { getRegistrations, deleteRegistration } from '../utils/storage';
 import { exportToExcel } from '../utils/excelExport';
@@ -186,6 +186,20 @@ const RegistrationList: React.FC = () => {
     }
   };
 
+  const stats = useMemo(() => {
+    const wave = registrations.filter(r => r.paymentType === 'wave');
+    const cash = registrations.filter(r => r.paymentType === 'cash');
+    const sum = (rs: Registration[]) => rs.reduce((acc, r) => acc + r.amount, 0);
+    return {
+      total: registrations.length,
+      totalAmount: sum(registrations),
+      waveCount: wave.length,
+      waveAmount: sum(wave),
+      cashCount: cash.length,
+      cashAmount: sum(cash),
+    };
+  }, [registrations]);
+
   const totalPages = Math.max(1, Math.ceil(filteredRegistrations.length / pageSize));
   const safePage = Math.min(currentPage, totalPages);
   const startIndex = (safePage - 1) * pageSize;
@@ -202,6 +216,32 @@ const RegistrationList: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col">
+      {/* Stats strip */}
+      {stats.total > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 px-3 py-2 border-b border-gray-200 bg-white">
+          <div className="panel px-3 py-2">
+            <div className="text-[10px] font-medium uppercase tracking-wider text-gray-500">Inscriptions</div>
+            <div className="text-base font-semibold text-gray-900 mt-0.5">{stats.total}</div>
+          </div>
+          <div className="panel px-3 py-2">
+            <div className="text-[10px] font-medium uppercase tracking-wider text-gray-500">Montant total</div>
+            <div className="text-base font-semibold text-gray-900 mt-0.5">{formatAmount(stats.totalAmount)}</div>
+          </div>
+          <div className="panel px-3 py-2 border-l-2 border-l-purple-400">
+            <div className="text-[10px] font-medium uppercase tracking-wider text-purple-700">Wave</div>
+            <div className="text-base font-semibold text-gray-900 mt-0.5">
+              {stats.waveCount} <span className="text-xs font-normal text-gray-500">· {formatAmount(stats.waveAmount)}</span>
+            </div>
+          </div>
+          <div className="panel px-3 py-2 border-l-2 border-l-emerald-400">
+            <div className="text-[10px] font-medium uppercase tracking-wider text-emerald-700">Espece</div>
+            <div className="text-base font-semibold text-gray-900 mt-0.5">
+              {stats.cashCount} <span className="text-xs font-normal text-gray-500">· {formatAmount(stats.cashAmount)}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Toolbar */}
       <div className="toolbar flex-wrap">
         {/* Search */}
