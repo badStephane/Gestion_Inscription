@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { addRegistration, getRegistrationById, updateRegistration } from '../utils/storage';
+import { getActivities } from '../utils/activities';
+import { Activity, DEFAULT_ACTIVITY_ID } from '../types';
 import { CheckCircle, AlertCircle, Save, X } from 'lucide-react';
 
 interface FormState {
@@ -12,6 +14,7 @@ interface FormState {
   registrationDate: string;
   paymentType: 'wave' | 'cash';
   amount: string;
+  activityId: string;
 }
 
 const PHONE_DIGITS_RE = /\d/g;
@@ -31,12 +34,29 @@ const RegistrationForm: React.FC = () => {
     registrationDate: new Date().toISOString().split('T')[0],
     paymentType: 'cash',
     amount: '',
+    activityId: DEFAULT_ACTIVITY_ID,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [isLoadingExisting, setIsLoadingExisting] = useState(isEditMode);
   const [notFound, setNotFound] = useState(false);
+  const [activities, setActivities] = useState<Activity[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const list = await getActivities(false);
+        if (!cancelled) setActivities(list);
+      } catch (error) {
+        console.error('Error loading activities:', error);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (!editId) return;
@@ -57,6 +77,7 @@ const RegistrationForm: React.FC = () => {
             registrationDate: existing.registrationDate,
             paymentType: existing.paymentType,
             amount: String(existing.amount),
+            activityId: existing.activityId,
           });
         }
       } catch (error) {
@@ -74,6 +95,7 @@ const RegistrationForm: React.FC = () => {
   const validate = () => {
     const newErrors: Record<string, string> = {};
 
+    if (!formData.activityId) newErrors.activityId = "L'activite est requise";
     if (!formData.lastName.trim()) newErrors.lastName = 'Le nom est requis';
     if (!formData.firstName.trim()) newErrors.firstName = 'Le prenom est requis';
 
@@ -104,7 +126,16 @@ const RegistrationForm: React.FC = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => {
+      const next = { ...prev, [name]: value };
+      if (name === 'activityId' && !isEditMode) {
+        const picked = activities.find(a => a.id === value);
+        if (picked?.defaultAmount !== undefined && (prev.amount === '' || prev.amount === '0')) {
+          next.amount = String(picked.defaultAmount);
+        }
+      }
+      return next;
+    });
 
     if (errors[name]) {
       setErrors(prev => {
@@ -132,6 +163,7 @@ const RegistrationForm: React.FC = () => {
           registrationDate: formData.registrationDate,
           paymentType: formData.paymentType,
           amount: parseFloat(formData.amount.replace(',', '.')),
+          activityId: formData.activityId,
         };
 
         if (isEditMode && editId) {
@@ -196,6 +228,27 @@ const RegistrationForm: React.FC = () => {
       ) : (
         <form onSubmit={handleSubmit} className="panel">
           <div className="p-4 space-y-4">
+            {/* Activity */}
+            <div>
+              <label htmlFor="activityId" className="block text-xs font-medium text-gray-600 mb-1">
+                Activite <span className="text-red-500">*</span>
+              </label>
+              <select
+                id="activityId"
+                name="activityId"
+                value={formData.activityId}
+                onChange={handleChange}
+                className={`input-field ${errors.activityId ? 'has-error' : ''}`}
+              >
+                {activities.map(a => (
+                  <option key={a.id} value={a.id}>
+                    {a.name}{a.eventDate ? ` — ${new Date(a.eventDate).toLocaleDateString('fr-FR')}` : ''}
+                  </option>
+                ))}
+              </select>
+              {errors.activityId && <p className="mt-0.5 text-xs text-red-500">{errors.activityId}</p>}
+            </div>
+
             {/* Row: Nom + Prenom */}
             <div className="grid grid-cols-2 gap-3">
               <div>
