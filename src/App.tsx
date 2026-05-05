@@ -1,21 +1,27 @@
-import React from 'react';
+import { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, NavLink } from 'react-router-dom';
-import { ClipboardList, PlusCircle, Home as HomeIcon, Database } from 'lucide-react';
+import { ClipboardList, PlusCircle, Home as HomeIcon, Database, Lock, KeyRound } from 'lucide-react';
 import Home from './pages/Home';
 import RegistrationForm from './components/RegistrationForm';
 import RegistrationList from './components/RegistrationList';
-import AuthGate from './components/AuthGate';
+import AuthGate, { useAuth } from './components/AuthGate';
+import ChangePasswordModal from './components/ChangePasswordModal';
 
-function App() {
-  const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-    `flex items-center gap-2 px-3 py-2 rounded text-sm transition-colors duration-100 ${
-      isActive
-        ? 'bg-gray-700/60 text-white font-medium'
-        : 'text-gray-300 hover:bg-gray-700/40 hover:text-white'
-    }`;
+const navLinkClass = ({ isActive }: { isActive: boolean }) =>
+  `flex items-center gap-2 px-3 py-2 rounded text-sm transition-colors duration-100 ${
+    isActive
+      ? 'bg-gray-700/60 text-white font-medium'
+      : 'text-gray-300 hover:bg-gray-700/40 hover:text-white'
+  }`;
+
+const accountActionClass =
+  'w-full flex items-center gap-2 px-3 py-2 rounded text-sm text-gray-300 hover:bg-gray-700/40 hover:text-white transition-colors';
+
+function AppShell() {
+  const { lock } = useAuth();
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
 
   return (
-    <AuthGate>
     <Router>
       <div className="h-full flex">
         {/* Sidebar */}
@@ -44,6 +50,18 @@ function App() {
             </NavLink>
           </nav>
 
+          {/* Account actions */}
+          <div className="border-t border-gray-800 px-2 py-2 space-y-0.5">
+            <button onClick={() => setChangePasswordOpen(true)} className={accountActionClass}>
+              <KeyRound className="h-4 w-4" />
+              Mot de passe
+            </button>
+            <button onClick={lock} className={accountActionClass}>
+              <Lock className="h-4 w-4" />
+              Verrouiller
+            </button>
+          </div>
+
           {/* Version footer */}
           <div className="px-4 py-3 border-t border-gray-800">
             <p className="text-[10px] text-gray-500 uppercase tracking-wider">Gestion Inscription v1.0</p>
@@ -60,7 +78,19 @@ function App() {
           </Routes>
         </main>
       </div>
+
+      <ChangePasswordModal
+        open={changePasswordOpen}
+        onClose={() => setChangePasswordOpen(false)}
+      />
     </Router>
+  );
+}
+
+function App() {
+  return (
+    <AuthGate>
+      <AppShell />
     </AuthGate>
   );
 }
