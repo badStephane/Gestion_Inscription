@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { KeyRound, X, AlertCircle, CheckCircle, Eye, EyeOff } from 'lucide-react';
-import { useAuth, MIN_PASSWORD_LENGTH } from './AuthGate';
+import { useAuth } from './AuthGate';
 
 interface ChangePasswordModalProps {
   open: boolean;
