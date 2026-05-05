@@ -2,20 +2,30 @@ use tauri_plugin_sql::{Migration, MigrationKind};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-  let migrations = vec![Migration {
-    version: 1,
-    description: "create_registrations_table",
-    sql: "CREATE TABLE IF NOT EXISTS registrations (
-            id TEXT PRIMARY KEY NOT NULL,
-            first_name TEXT NOT NULL,
-            last_name TEXT NOT NULL,
-            address TEXT NOT NULL,
-            registration_date TEXT NOT NULL,
-            payment_type TEXT NOT NULL CHECK(payment_type IN ('wave','cash')),
-            created_at INTEGER NOT NULL
-          );",
-    kind: MigrationKind::Up,
-  }];
+  let migrations = vec![
+    Migration {
+      version: 1,
+      description: "create_registrations_table",
+      sql: "CREATE TABLE IF NOT EXISTS registrations (
+              id TEXT PRIMARY KEY NOT NULL,
+              first_name TEXT NOT NULL,
+              last_name TEXT NOT NULL,
+              address TEXT NOT NULL,
+              registration_date TEXT NOT NULL,
+              payment_type TEXT NOT NULL CHECK(payment_type IN ('wave','cash')),
+              created_at INTEGER NOT NULL
+            );",
+      kind: MigrationKind::Up,
+    },
+    Migration {
+      version: 2,
+      description: "add_phone_email_amount",
+      sql: "ALTER TABLE registrations ADD COLUMN phone TEXT NOT NULL DEFAULT '';
+            ALTER TABLE registrations ADD COLUMN email TEXT;
+            ALTER TABLE registrations ADD COLUMN amount REAL NOT NULL DEFAULT 0;",
+      kind: MigrationKind::Up,
+    },
+  ];
 
   tauri::Builder::default()
     .plugin(tauri_plugin_dialog::init())
