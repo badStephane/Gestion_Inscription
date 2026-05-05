@@ -7,8 +7,30 @@ import { Registration } from '../types';
 const formatAmount = (amount: number): string =>
   `${new Intl.NumberFormat('fr-FR').format(amount)} F`;
 
+interface DashboardStats {
+  total: number;
+  totalAmount: number;
+  waveCount: number;
+  waveAmount: number;
+  orangeCount: number;
+  orangeAmount: number;
+  cashCount: number;
+  cashAmount: number;
+}
+
+const EMPTY_STATS: DashboardStats = {
+  total: 0,
+  totalAmount: 0,
+  waveCount: 0,
+  waveAmount: 0,
+  orangeCount: 0,
+  orangeAmount: 0,
+  cashCount: 0,
+  cashAmount: 0,
+};
+
 const Home: React.FC = () => {
-  const [stats, setStats] = useState<{ total: number; wave: number; cash: number; orange: number; totalAmount: number } | null>(null);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -16,27 +38,34 @@ const Home: React.FC = () => {
       try {
         const data: Registration[] = await getRegistrations();
         if (cancelled) return;
+        const sumOf = (rs: Registration[]) => rs.reduce((acc, r) => acc + r.amount, 0);
+        const wave = data.filter(r => r.paymentType === 'wave');
+        const orange = data.filter(r => r.paymentType === 'orange_money');
+        const cash = data.filter(r => r.paymentType === 'cash');
         setStats({
           total: data.length,
-          wave: data.filter(r => r.paymentType === 'wave').length,
-          cash: data.filter(r => r.paymentType === 'cash').length,
-          orange: data.filter(r => r.paymentType === 'orange_money').length,
-          totalAmount: data.reduce((sum, r) => sum + r.amount, 0),
+          totalAmount: sumOf(data),
+          waveCount: wave.length,
+          waveAmount: sumOf(wave),
+          orangeCount: orange.length,
+          orangeAmount: sumOf(orange),
+          cashCount: cash.length,
+          cashAmount: sumOf(cash),
         });
       } catch {
         // DB may not be available in browser-only mode
-        if (!cancelled) setStats({ total: 0, wave: 0, cash: 0, orange: 0, totalAmount: 0 });
+        if (!cancelled) setStats(EMPTY_STATS);
       }
     })();
     return () => { cancelled = true; };
   }, []);
 
   return (
-    <div className="p-6 max-w-4xl">
+    <div className="p-6 max-w-5xl">
       {/* Stats cards */}
       {stats === null ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
-          {Array.from({ length: 4 }).map((_, i) => (
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-8">
+          {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="panel p-4">
               <div className="skeleton h-3 w-24 rounded mb-2" />
               <div className="skeleton h-7 w-16 rounded" />
@@ -44,7 +73,7 @@ const Home: React.FC = () => {
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-8">
           <div className="panel p-4">
             <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Total inscriptions</p>
             <p className="text-2xl font-bold text-gray-900 tabular-nums">{stats.total}</p>
@@ -53,15 +82,20 @@ const Home: React.FC = () => {
             <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Montant total</p>
             <p className="text-2xl font-bold text-gray-900 tabular-nums">{formatAmount(stats.totalAmount)}</p>
           </div>
-          <div className="panel p-4">
-            <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Wave / Orange Money</p>
-            <p className="text-2xl font-bold text-purple-700 tabular-nums">
-              {stats.wave} <span className="text-orange-600">/ {stats.orange}</span>
-            </p>
+          <div className="panel p-4 border-l-2 border-l-purple-400">
+            <p className="text-xs text-purple-700 uppercase tracking-wide mb-1">Wave</p>
+            <p className="text-2xl font-bold text-gray-900 tabular-nums">{stats.waveCount}</p>
+            <p className="text-xs text-gray-500 tabular-nums mt-0.5">{formatAmount(stats.waveAmount)}</p>
           </div>
-          <div className="panel p-4">
-            <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Paiements Espece</p>
-            <p className="text-2xl font-bold text-emerald-700 tabular-nums">{stats.cash}</p>
+          <div className="panel p-4 border-l-2 border-l-orange-400">
+            <p className="text-xs text-orange-700 uppercase tracking-wide mb-1">Orange Money</p>
+            <p className="text-2xl font-bold text-gray-900 tabular-nums">{stats.orangeCount}</p>
+            <p className="text-xs text-gray-500 tabular-nums mt-0.5">{formatAmount(stats.orangeAmount)}</p>
+          </div>
+          <div className="panel p-4 border-l-2 border-l-emerald-400">
+            <p className="text-xs text-emerald-700 uppercase tracking-wide mb-1">Espèce</p>
+            <p className="text-2xl font-bold text-gray-900 tabular-nums">{stats.cashCount}</p>
+            <p className="text-xs text-gray-500 tabular-nums mt-0.5">{formatAmount(stats.cashAmount)}</p>
           </div>
         </div>
       )}
