@@ -8,7 +8,6 @@ import {
   Download,
   Search,
   Trash2,
-  Filter,
   Save,
   Upload,
   Pencil,
@@ -52,7 +51,6 @@ const RegistrationList: React.FC = () => {
   const [filteredRegistrations, setFilteredRegistrations] = useState<Registration[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterPayment, setFilterPayment] = useState('');
-  const [showFilters, setShowFilters] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
@@ -123,12 +121,12 @@ const RegistrationList: React.FC = () => {
 
   const SortIcon: React.FC<{ column: SortKey }> = ({ column }) => {
     if (sortKey !== column) {
-      return <ChevronsUpDown className="h-3 w-3 ml-1 text-gray-400" />;
+      return <ChevronsUpDown className="h-3 w-3 ml-0.5 text-gray-400" />;
     }
     return sortDirection === 'asc' ? (
-      <ChevronUp className="h-3 w-3 ml-1 text-gray-700" />
+      <ChevronUp className="h-3 w-3 ml-0.5 text-gray-700" />
     ) : (
-      <ChevronDown className="h-3 w-3 ml-1 text-gray-700" />
+      <ChevronDown className="h-3 w-3 ml-0.5 text-gray-700" />
     );
   };
 
@@ -139,7 +137,7 @@ const RegistrationList: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm('Êtes-vous sûr de vouloir supprimer cette inscription?')) {
+    if (window.confirm('Supprimer cette inscription ?')) {
       try {
         await deleteRegistration(id);
         setRegistrations(prev => prev.filter(reg => reg.id !== id));
@@ -149,36 +147,30 @@ const RegistrationList: React.FC = () => {
     }
   };
 
-  const resetFilters = () => {
-    setSearchTerm('');
-    setFilterPayment('');
-    setShowFilters(false);
-  };
-
   const handleBackup = async () => {
     try {
       const ok = await exportDatabase();
-      if (ok) alert('Base de données sauvegardée avec succès.');
+      if (ok) alert('Base de donnees sauvegardee.');
     } catch (error) {
       console.error('Error exporting database:', error);
-      alert('Erreur lors de la sauvegarde de la base de données.');
+      alert('Erreur lors de la sauvegarde.');
     }
   };
 
   const handleRestore = async () => {
     const confirmed = window.confirm(
-      'Restaurer une base de données va REMPLACER toutes les inscriptions actuelles. Continuer ?'
+      'Restaurer une base de donnees va REMPLACER toutes les inscriptions actuelles. Continuer ?'
     );
     if (!confirmed) return;
     try {
       const ok = await importDatabase();
       if (ok) {
-        alert('Base de données restaurée. L\'application va redémarrer.');
+        alert('Base restauree. L\'application va redemarrer.');
         window.location.reload();
       }
     } catch (error) {
       console.error('Error importing database:', error);
-      alert('Erreur lors de la restauration de la base de données.');
+      alert('Erreur lors de la restauration.');
     }
   };
 
@@ -191,220 +183,171 @@ const RegistrationList: React.FC = () => {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-500 border-t-transparent"></div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-md p-6 my-8">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 border-b pb-4">
-        <h2 className="text-2xl font-bold text-gray-800 mb-3 sm:mb-0">Liste des Inscriptions</h2>
-        
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-          >
-            <Filter className="h-4 w-4 mr-1" />
-            Filtres
-          </button>
-
-          <button
-            onClick={handleExport}
-            disabled={filteredRegistrations.length === 0}
-            className={`flex items-center px-3 py-2 rounded-lg transition-colors ${
-              filteredRegistrations.length === 0
-                ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                : 'bg-green-600 hover:bg-green-700 text-white'
-            }`}
-          >
-            <Download className="h-4 w-4 mr-1" />
-            Exporter Excel
-          </button>
-
-          <button
-            onClick={handleBackup}
-            title="Sauvegarder la base de données dans un fichier .db"
-            className="flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-          >
-            <Save className="h-4 w-4 mr-1" />
-            Sauvegarder BD
-          </button>
-
-          <button
-            onClick={handleRestore}
-            title="Restaurer la base de données depuis un fichier .db"
-            className="flex items-center px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors"
-          >
-            <Upload className="h-4 w-4 mr-1" />
-            Restaurer BD
-          </button>
+    <div className="h-full flex flex-col">
+      {/* Toolbar */}
+      <div className="toolbar flex-wrap">
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Rechercher..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="input-field pl-7 w-48 py-1"
+          />
         </div>
+
+        {/* Payment filter */}
+        <select
+          value={filterPayment}
+          onChange={(e) => setFilterPayment(e.target.value)}
+          className="input-field w-auto py-1"
+        >
+          <option value="">Tous les paiements</option>
+          <option value="cash">Espece</option>
+          <option value="wave">Wave</option>
+        </select>
+
+        <div className="h-4 w-px bg-gray-300 mx-1"></div>
+
+        {/* Actions */}
+        <button
+          onClick={handleExport}
+          disabled={filteredRegistrations.length === 0}
+          className={`btn btn-success ${filteredRegistrations.length === 0 ? 'opacity-50 pointer-events-none' : ''}`}
+        >
+          <Download className="h-3.5 w-3.5" />
+          Excel
+        </button>
+
+        <button onClick={handleBackup} className="btn btn-default">
+          <Save className="h-3.5 w-3.5" />
+          Sauvegarder
+        </button>
+
+        <button onClick={handleRestore} className="btn btn-warning">
+          <Upload className="h-3.5 w-3.5" />
+          Restaurer
+        </button>
+
+        {/* Count */}
+        <span className="ml-auto text-xs text-gray-500">
+          {filteredRegistrations.length} / {registrations.length} inscription(s)
+        </span>
       </div>
-      
-      <div className={`mb-6 ${showFilters ? 'block' : 'hidden'}`}>
-        <div className="bg-blue-50 p-4 rounded-lg">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
-                Recherche
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search className="h-4 w-4 text-gray-400" />
-                </div>
-                <input
-                  type="text"
-                  id="search"
-                  placeholder="Nom, prénom, téléphone, email, adresse..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-            </div>
-            
-            <div>
-              <label htmlFor="paymentFilter" className="block text-sm font-medium text-gray-700 mb-1">
-                Type de paiement
-              </label>
-              <select
-                id="paymentFilter"
-                value={filterPayment}
-                onChange={(e) => setFilterPayment(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+
+      {/* Table */}
+      <div className="flex-1 overflow-auto">
+        {filteredRegistrations.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-48 text-gray-400">
+            <p className="text-sm">Aucune inscription trouvee</p>
+            {(searchTerm || filterPayment) && (
+              <button
+                onClick={() => { setSearchTerm(''); setFilterPayment(''); }}
+                className="mt-2 text-xs text-blue-600 hover:underline"
               >
-                <option value="">Tous les types</option>
-                <option value="cash">Espèce</option>
-                <option value="wave">Wave</option>
-              </select>
-            </div>
+                Effacer les filtres
+              </button>
+            )}
           </div>
-          
-          <div className="flex justify-end mt-3">
-            <button
-              onClick={resetFilters}
-              className="px-3 py-1 text-sm text-blue-600 hover:text-blue-800 hover:underline transition-colors"
-            >
-              Réinitialiser les filtres
-            </button>
-          </div>
-        </div>
-      </div>
-      
-      {filteredRegistrations.length === 0 ? (
-        <div className="text-center py-12 bg-gray-50 rounded-lg">
-          <p className="text-gray-500 text-lg">Aucune inscription trouvée</p>
-          {(searchTerm || filterPayment) && (
-            <button
-              onClick={resetFilters}
-              className="mt-2 text-blue-600 hover:text-blue-800 hover:underline transition-colors"
-            >
-              Effacer les filtres
-            </button>
-          )}
-        </div>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+        ) : (
+          <table className="w-full text-xs">
+            <thead className="bg-gray-50 border-b border-gray-200 sticky top-0">
               <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="text-left px-3 py-2 font-medium text-gray-600">
                   <button
                     type="button"
                     onClick={() => toggleSort('name')}
-                    className="inline-flex items-center hover:text-gray-700"
+                    className="inline-flex items-center hover:text-gray-900"
                   >
                     Inscrit <SortIcon column="name" />
                   </button>
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Adresse
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="text-left px-3 py-2 font-medium text-gray-600">Adresse</th>
+                <th className="text-left px-3 py-2 font-medium text-gray-600">
                   <button
                     type="button"
                     onClick={() => toggleSort('date')}
-                    className="inline-flex items-center hover:text-gray-700"
+                    className="inline-flex items-center hover:text-gray-900"
                   >
                     Date <SortIcon column="date" />
                   </button>
                 </th>
-                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="text-right px-3 py-2 font-medium text-gray-600">
                   <button
                     type="button"
                     onClick={() => toggleSort('amount')}
-                    className="inline-flex items-center hover:text-gray-700"
+                    className="inline-flex items-center hover:text-gray-900"
                   >
                     Montant <SortIcon column="amount" />
                   </button>
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="text-left px-3 py-2 font-medium text-gray-600">
                   <button
                     type="button"
                     onClick={() => toggleSort('payment')}
-                    className="inline-flex items-center hover:text-gray-700"
+                    className="inline-flex items-center hover:text-gray-900"
                   >
                     Paiement <SortIcon column="payment" />
                   </button>
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
+                <th className="text-center px-3 py-2 font-medium text-gray-600 w-20">Actions</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-100">
               {paginatedRegistrations.map(registration => (
-                <tr key={registration.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">
+                <tr key={registration.id} className="hover:bg-blue-50/50 transition-colors duration-75">
+                  <td className="px-3 py-2">
+                    <div className="font-medium text-gray-900">
                       {registration.lastName} {registration.firstName}
                     </div>
-                    <div className="text-sm text-gray-500">{registration.phone}</div>
+                    <div className="text-gray-500">{registration.phone}</div>
                     {registration.email && (
-                      <div className="text-xs text-gray-400 truncate max-w-xs">{registration.email}</div>
+                      <div className="text-gray-400 truncate max-w-[180px]">{registration.email}</div>
                     )}
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-700">
-                    <div className="truncate max-w-xs" title={registration.address}>
+                  <td className="px-3 py-2 text-gray-700">
+                    <div className="truncate max-w-[180px]" title={registration.address}>
                       {registration.address}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">
-                      {new Date(registration.registrationDate).toLocaleDateString()}
-                    </div>
+                  <td className="px-3 py-2 text-gray-700 whitespace-nowrap">
+                    {new Date(registration.registrationDate).toLocaleDateString('fr-FR')}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-gray-900">
+                  <td className="px-3 py-2 text-right font-medium text-gray-900 whitespace-nowrap">
                     {formatAmount(registration.amount)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                  <td className="px-3 py-2 whitespace-nowrap">
+                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide ${
                       registration.paymentType === 'wave'
-                        ? 'bg-purple-100 text-purple-800'
-                        : 'bg-green-100 text-green-800'
+                        ? 'bg-purple-100 text-purple-700'
+                        : 'bg-emerald-100 text-emerald-700'
                     }`}>
-                      {registration.paymentType === 'wave' ? 'Wave' : 'Espèce'}
+                      {registration.paymentType === 'wave' ? 'Wave' : 'Espece'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <div className="flex items-center gap-3">
+                  <td className="px-3 py-2">
+                    <div className="flex items-center justify-center gap-1">
                       <Link
                         to={`/edit/${registration.id}`}
-                        className="text-blue-600 hover:text-blue-900 transition-colors"
-                        aria-label="Modifier"
+                        className="p-1 rounded hover:bg-blue-100 text-blue-600 transition-colors"
                         title="Modifier"
                       >
-                        <Pencil className="h-5 w-5" />
+                        <Pencil className="h-3.5 w-3.5" />
                       </Link>
                       <button
                         onClick={() => handleDelete(registration.id)}
-                        className="text-red-600 hover:text-red-900 transition-colors"
-                        aria-label="Supprimer"
+                        className="p-1 rounded hover:bg-red-100 text-red-600 transition-colors"
                         title="Supprimer"
                       >
-                        <Trash2 className="h-5 w-5" />
+                        <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     </div>
                   </td>
@@ -412,52 +355,41 @@ const RegistrationList: React.FC = () => {
               ))}
             </tbody>
           </table>
-        </div>
-      )}
-      
+        )}
+      </div>
+
+      {/* Pagination bar */}
       {filteredRegistrations.length > 0 && (
-        <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-sm text-gray-600">
-          <div>
-            Affichage de <span className="font-medium">{startIndex + 1}</span>–<span className="font-medium">{endIndex}</span> sur{' '}
-            <span className="font-medium">{filteredRegistrations.length}</span>
-            {filteredRegistrations.length !== registrations.length && (
-              <> (sur {registrations.length} au total)</>
-            )}
+        <div className="flex items-center justify-between px-3 py-2 border-t border-gray-200 bg-gray-50 text-xs text-gray-600">
+          <div className="flex items-center gap-2">
+            <span>Lignes par page:</span>
+            <select
+              value={pageSize}
+              onChange={(e) => setPageSize(Number(e.target.value))}
+              className="input-field w-auto py-0.5 px-1.5 text-xs"
+            >
+              {PAGE_SIZE_OPTIONS.map(opt => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
           </div>
 
           <div className="flex items-center gap-3">
-            <label className="flex items-center gap-2">
-              <span>Lignes par page:</span>
-              <select
-                value={pageSize}
-                onChange={(e) => setPageSize(Number(e.target.value))}
-                className="border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                {PAGE_SIZE_OPTIONS.map(size => (
-                  <option key={size} value={size}>{size}</option>
-                ))}
-              </select>
-            </label>
-
-            <div className="flex items-center gap-1">
+            <span>{startIndex + 1}-{endIndex} sur {filteredRegistrations.length}</span>
+            <div className="flex items-center gap-0.5">
               <button
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                disabled={safePage === 1}
-                className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                aria-label="Page précédente"
+                disabled={safePage <= 1}
+                className="p-1 rounded hover:bg-gray-200 disabled:opacity-30 disabled:pointer-events-none"
               >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="h-3.5 w-3.5" />
               </button>
-              <span className="px-2">
-                Page <span className="font-medium">{safePage}</span> / {totalPages}
-              </span>
               <button
                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                disabled={safePage === totalPages}
-                className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                aria-label="Page suivante"
+                disabled={safePage >= totalPages}
+                className="p-1 rounded hover:bg-gray-200 disabled:opacity-30 disabled:pointer-events-none"
               >
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="h-3.5 w-3.5" />
               </button>
             </div>
           </div>
