@@ -45,6 +45,23 @@ pub fn run() {
             ALTER TABLE auth_settings ADD COLUMN recovery_iterations INTEGER;",
       kind: MigrationKind::Up,
     },
+    Migration {
+      version: 5,
+      description: "create_activities_and_link_registrations",
+      sql: "CREATE TABLE IF NOT EXISTS activities (
+              id TEXT PRIMARY KEY NOT NULL,
+              name TEXT NOT NULL,
+              color TEXT NOT NULL DEFAULT '#3b82f6',
+              event_date TEXT,
+              default_amount REAL,
+              archived_at INTEGER,
+              created_at INTEGER NOT NULL
+            );
+            INSERT INTO activities (id, name, color, created_at)
+            VALUES ('00000000-0000-0000-0000-000000000001', 'Inscriptions générales', '#3b82f6', CAST(strftime('%s', 'now') AS INTEGER) * 1000);
+            ALTER TABLE registrations ADD COLUMN activity_id TEXT NOT NULL DEFAULT '00000000-0000-0000-0000-000000000001';",
+      kind: MigrationKind::Up,
+    },
   ];
 
   tauri::Builder::default()
