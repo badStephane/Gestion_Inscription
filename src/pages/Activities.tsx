@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Pencil, Archive, ArchiveRestore, Trash2, CalendarDays, Users, Lock } from 'lucide-react';
+import { Plus, Pencil, Archive, ArchiveRestore, Trash2, CalendarDays, Users, Lock, FileUp } from 'lucide-react';
 import { Activity, DEFAULT_ACTIVITY_ID } from '../types';
 import {
   getActivities,
@@ -11,6 +11,7 @@ import {
 import ActivityFormModal from '../components/ActivityFormModal';
 import ConfirmModal from '../components/ConfirmModal';
 import Toast, { ToastVariant } from '../components/Toast';
+import ImportRegistrationsModal from '../components/ImportRegistrationsModal';
 
 const formatAmount = (amount: number): string =>
   `${new Intl.NumberFormat('fr-FR').format(amount)} F`;
@@ -23,6 +24,7 @@ const Activities: React.FC = () => {
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
   const [archiveTarget, setArchiveTarget] = useState<Activity | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Activity | null>(null);
+  const [importTarget, setImportTarget] = useState<Activity | null>(null);
   const [toast, setToast] = useState<{ open: boolean; variant: ToastVariant; message: string }>({
     open: false,
     variant: 'success',
@@ -156,6 +158,16 @@ const Activities: React.FC = () => {
           </div>
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
+          {!isArchived && (
+            <button
+              onClick={() => setImportTarget(a)}
+              aria-label={`Importer une liste d'inscriptions dans ${a.name}`}
+              title="Importer une liste"
+              className="p-1.5 rounded hover:bg-blue-100 text-blue-600"
+            >
+              <FileUp className="h-3.5 w-3.5" aria-hidden="true" />
+            </button>
+          )}
           <button
             onClick={() => handleEdit(a)}
             aria-label={`Modifier ${a.name}`}
@@ -254,6 +266,16 @@ const Activities: React.FC = () => {
         variant="danger"
         onConfirm={confirmDelete}
         onCancel={() => setDeleteTarget(null)}
+      />
+
+      <ImportRegistrationsModal
+        open={importTarget !== null}
+        activity={importTarget}
+        onClose={() => setImportTarget(null)}
+        onImported={(count) => {
+          showToast('success', `${count} inscription${count > 1 ? 's' : ''} importée${count > 1 ? 's' : ''} dans « ${importTarget?.name} ».`);
+          loadActivities();
+        }}
       />
 
       <Toast
