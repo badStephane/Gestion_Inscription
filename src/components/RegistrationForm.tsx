@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { addRegistration } from '../utils/storage';
-import { CheckCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { addRegistration, getRegistrationById, updateRegistration } from '../utils/storage';
+import { CheckCircle, AlertCircle } from 'lucide-react';
 
 interface FormState {
   firstName: string;
@@ -19,6 +19,9 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const RegistrationForm: React.FC = () => {
   const navigate = useNavigate();
+  const { id: editId } = useParams<{ id: string }>();
+  const isEditMode = Boolean(editId);
+
   const [formData, setFormData] = useState<FormState>({
     firstName: '',
     lastName: '',
@@ -32,6 +35,41 @@ const RegistrationForm: React.FC = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [isLoadingExisting, setIsLoadingExisting] = useState(isEditMode);
+  const [notFound, setNotFound] = useState(false);
+
+  useEffect(() => {
+    if (!editId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const existing = await getRegistrationById(editId);
+        if (cancelled) return;
+        if (!existing) {
+          setNotFound(true);
+        } else {
+          setFormData({
+            firstName: existing.firstName,
+            lastName: existing.lastName,
+            phone: existing.phone,
+            email: existing.email ?? '',
+            address: existing.address,
+            registrationDate: existing.registrationDate,
+            paymentType: existing.paymentType,
+            amount: String(existing.amount),
+          });
+        }
+      } catch (error) {
+        console.error('Error loading registration:', error);
+        if (!cancelled) setNotFound(true);
+      } finally {
+        if (!cancelled) setIsLoadingExisting(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [editId]);
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
@@ -85,7 +123,7 @@ const RegistrationForm: React.FC = () => {
 
       try {
         const trimmedEmail = formData.email.trim();
-        await addRegistration({
+        const payload = {
           firstName: formData.firstName.trim(),
           lastName: formData.lastName.trim(),
           phone: formData.phone.trim(),
@@ -94,7 +132,13 @@ const RegistrationForm: React.FC = () => {
           registrationDate: formData.registrationDate,
           paymentType: formData.paymentType,
           amount: parseFloat(formData.amount.replace(',', '.')),
-        });
+        };
+
+        if (isEditMode && editId) {
+          await updateRegistration({ id: editId, ...payload });
+        } else {
+          await addRegistration(payload);
+        }
         setIsSuccess(true);
 
         setTimeout(() => {
@@ -102,7 +146,7 @@ const RegistrationForm: React.FC = () => {
           navigate('/registrations');
         }, 1500);
       } catch (error) {
-        console.error('Error adding registration:', error);
+        console.error('Error saving registration:', error);
       } finally {
         setIsSubmitting(false);
       }
@@ -114,14 +158,42 @@ const RegistrationForm: React.FC = () => {
       hasError ? 'border-red-500' : 'border-gray-300'
     }`;
 
+  if (isLoadingExisting) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (notFound) {
+    return (
+      <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-md p-6 my-8 text-center">
+        <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
+        <h2 className="text-2xl font-bold text-gray-800 mb-2">Inscription introuvable</h2>
+        <p className="text-gray-600 mb-6">L'inscription demandée n'existe pas ou a été supprimée.</p>
+        <button
+          onClick={() => navigate('/registrations')}
+          className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+        >
+          Retour à la liste
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-md p-6 my-8 transition-all duration-300">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">Nouvelle Inscription</h2>
+      <h2 className="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">
+        {isEditMode ? "Modifier l'Inscription" : 'Nouvelle Inscription'}
+      </h2>
 
       {isSuccess ? (
         <div className="flex flex-col items-center justify-center py-8 text-center text-green-600 space-y-3 animate-appear">
           <CheckCircle className="h-16 w-16" />
-          <p className="text-xl font-medium">Inscription enregistrée avec succès!</p>
+          <p className="text-xl font-medium">
+            {isEditMode ? 'Inscription modifiée avec succès!' : 'Inscription enregistrée avec succès!'}
+          </p>
           <p className="text-gray-600">Vous serez redirigé vers la liste des inscriptions...</p>
         </div>
       ) : (
@@ -295,7 +367,9 @@ const RegistrationForm: React.FC = () => {
                   : 'hover:bg-blue-700 active:bg-blue-800'
               } transition-colors shadow-sm`}
             >
-              {isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
+              {isSubmitting
+                ? isEditMode ? 'Mise à jour...' : 'Enregistrement...'
+                : isEditMode ? 'Mettre à jour' : 'Enregistrer'}
             </button>
           </div>
         </form>

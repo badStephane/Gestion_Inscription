@@ -38,6 +38,15 @@ export const getRegistrations = async (): Promise<Registration[]> => {
   return rows.map(rowToRegistration);
 };
 
+export const getRegistrationById = async (id: string): Promise<Registration | null> => {
+  const db = await getDb();
+  const rows = await db.select<Row[]>(
+    `SELECT ${COLUMNS} FROM registrations WHERE id = $1 LIMIT 1`,
+    [id]
+  );
+  return rows.length > 0 ? rowToRegistration(rows[0]) : null;
+};
+
 export const addRegistration = async (
   registration: Omit<Registration, 'id' | 'createdAt'>
 ): Promise<Registration> => {
@@ -63,6 +72,35 @@ export const addRegistration = async (
     ]
   );
   return newRegistration;
+};
+
+export const updateRegistration = async (
+  registration: Omit<Registration, 'createdAt'>
+): Promise<void> => {
+  const db = await getDb();
+  await db.execute(
+    `UPDATE registrations SET
+       first_name = $1,
+       last_name = $2,
+       phone = $3,
+       email = $4,
+       address = $5,
+       registration_date = $6,
+       payment_type = $7,
+       amount = $8
+     WHERE id = $9`,
+    [
+      registration.firstName,
+      registration.lastName,
+      registration.phone,
+      registration.email ?? null,
+      registration.address,
+      registration.registrationDate,
+      registration.paymentType,
+      registration.amount,
+      registration.id,
+    ]
+  );
 };
 
 export const deleteRegistration = async (id: string): Promise<void> => {

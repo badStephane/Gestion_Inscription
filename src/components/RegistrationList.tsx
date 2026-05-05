@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { getRegistrations, deleteRegistration } from '../utils/storage';
 import { exportToExcel } from '../utils/excelExport';
 import { exportDatabase, importDatabase } from '../utils/dbBackup';
 import { Registration } from '../types';
-import { Download, Search, Trash2, Filter, Save, Upload } from 'lucide-react';
+import { Download, Search, Trash2, Filter, Save, Upload, Pencil } from 'lucide-react';
 
 const formatAmount = (amount: number): string =>
   `${new Intl.NumberFormat('fr-FR').format(amount)} F`;
@@ -289,13 +290,24 @@ const RegistrationList: React.FC = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <button
-                      onClick={() => handleDelete(registration.id)}
-                      className="text-red-600 hover:text-red-900 transition-colors"
-                      aria-label="Supprimer"
-                    >
-                      <Trash2 className="h-5 w-5" />
-                    </button>
+                    <div className="flex items-center gap-3">
+                      <Link
+                        to={`/edit/${registration.id}`}
+                        className="text-blue-600 hover:text-blue-900 transition-colors"
+                        aria-label="Modifier"
+                        title="Modifier"
+                      >
+                        <Pencil className="h-5 w-5" />
+                      </Link>
+                      <button
+                        onClick={() => handleDelete(registration.id)}
+                        className="text-red-600 hover:text-red-900 transition-colors"
+                        aria-label="Supprimer"
+                        title="Supprimer"
+                      >
+                        <Trash2 className="h-5 w-5" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
