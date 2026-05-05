@@ -4,6 +4,8 @@ import { getRegistrations, deleteRegistration } from '../utils/storage';
 import { exportToExcel } from '../utils/excelExport';
 import { exportDatabase, importDatabase } from '../utils/dbBackup';
 import { Registration } from '../types';
+import ConfirmModal from './ConfirmModal';
+import Toast, { ToastVariant } from './Toast';
 import {
   Download,
   Search,
@@ -56,6 +58,16 @@ const RegistrationList: React.FC = () => {
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [restoreOpen, setRestoreOpen] = useState(false);
+  const [toast, setToast] = useState<{ open: boolean; variant: ToastVariant; message: string }>({
+    open: false,
+    variant: 'success',
+    message: '',
+  });
+
+  const showToast = (variant: ToastVariant, message: string) =>
+    setToast({ open: true, variant, message });
 
   useEffect(() => {
     setCurrentPage(1);
@@ -136,41 +148,41 @@ const RegistrationList: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm('Supprimer cette inscription ?')) {
-      try {
-        await deleteRegistration(id);
-        setRegistrations(prev => prev.filter(reg => reg.id !== id));
-      } catch (error) {
-        console.error('Error deleting registration:', error);
-      }
+  const confirmDelete = async () => {
+    if (!deleteTargetId) return;
+    try {
+      await deleteRegistration(deleteTargetId);
+      setRegistrations(prev => prev.filter(reg => reg.id !== deleteTargetId));
+      showToast('success', 'Inscription supprimee.');
+    } catch (error) {
+      console.error('Error deleting registration:', error);
+      showToast('error', 'Erreur lors de la suppression.');
+    } finally {
+      setDeleteTargetId(null);
     }
   };
 
   const handleBackup = async () => {
     try {
       const ok = await exportDatabase();
-      if (ok) alert('Base de donnees sauvegardee.');
+      if (ok) showToast('success', 'Base de donnees sauvegardee.');
     } catch (error) {
       console.error('Error exporting database:', error);
-      alert('Erreur lors de la sauvegarde.');
+      showToast('error', 'Erreur lors de la sauvegarde.');
     }
   };
 
-  const handleRestore = async () => {
-    const confirmed = window.confirm(
-      'Restaurer une base de donnees va REMPLACER toutes les inscriptions actuelles. Continuer ?'
-    );
-    if (!confirmed) return;
+  const confirmRestore = async () => {
+    setRestoreOpen(false);
     try {
       const ok = await importDatabase();
       if (ok) {
-        alert('Base restauree. L\'application va redemarrer.');
-        window.location.reload();
+        showToast('success', 'Base restauree. Redemarrage...');
+        setTimeout(() => window.location.reload(), 1200);
       }
     } catch (error) {
       console.error('Error importing database:', error);
-      alert('Erreur lors de la restauration.');
+      showToast('error', 'Erreur lors de la restauration.');
     }
   };
 
@@ -232,7 +244,7 @@ const RegistrationList: React.FC = () => {
           Sauvegarder
         </button>
 
-        <button onClick={handleRestore} className="btn btn-warning">
+        <button onClick={() => setRestoreOpen(true)} className="btn btn-warning">
           <Upload className="h-3.5 w-3.5" />
           Restaurer
         </button>
@@ -343,7 +355,7 @@ const RegistrationList: React.FC = () => {
                         <Pencil className="h-3.5 w-3.5" />
                       </Link>
                       <button
-                        onClick={() => handleDelete(registration.id)}
+                        onClick={() => setDeleteTargetId(registration.id)}
                         className="p-1 rounded hover:bg-red-100 text-red-600 transition-colors"
                         title="Supprimer"
                       >
@@ -395,6 +407,33 @@ const RegistrationList: React.FC = () => {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        open={deleteTargetId !== null}
+        title="Supprimer l'inscription"
+        message="Cette inscription sera definitivement supprimee. Cette action est irreversible."
+        confirmLabel="Supprimer"
+        variant="danger"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTargetId(null)}
+      />
+
+      <ConfirmModal
+        open={restoreOpen}
+        title="Restaurer la base de donnees"
+        message="Toutes les inscriptions actuelles seront remplacees par celles du fichier importe. Continuer ?"
+        confirmLabel="Restaurer"
+        variant="danger"
+        onConfirm={confirmRestore}
+        onCancel={() => setRestoreOpen(false)}
+      />
+
+      <Toast
+        open={toast.open}
+        variant={toast.variant}
+        message={toast.message}
+        onClose={() => setToast(t => ({ ...t, open: false }))}
+      />
     </div>
   );
 };
