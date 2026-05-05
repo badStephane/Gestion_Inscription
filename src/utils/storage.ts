@@ -107,3 +107,41 @@ export const deleteRegistration = async (id: string): Promise<void> => {
   const db = await getDb();
   await db.execute('DELETE FROM registrations WHERE id = $1', [id]);
 };
+
+export const addRegistrationsBulk = async (
+  registrations: Omit<Registration, 'id' | 'createdAt'>[]
+): Promise<Registration[]> => {
+  const db = await getDb();
+  const inserted: Registration[] = [];
+  await db.execute('BEGIN');
+  try {
+    for (const reg of registrations) {
+      const newReg: Registration = {
+        ...reg,
+        id: crypto.randomUUID(),
+        createdAt: Date.now(),
+      };
+      await db.execute(
+        `INSERT INTO registrations (${COLUMNS}) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+        [
+          newReg.id,
+          newReg.firstName,
+          newReg.lastName,
+          newReg.phone,
+          newReg.address,
+          newReg.registrationDate,
+          newReg.paymentType,
+          newReg.amount,
+          newReg.activityId,
+          newReg.createdAt,
+        ]
+      );
+      inserted.push(newReg);
+    }
+    await db.execute('COMMIT');
+    return inserted;
+  } catch (error) {
+    await db.execute('ROLLBACK');
+    throw error;
+  }
+};
