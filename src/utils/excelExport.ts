@@ -1,8 +1,12 @@
 import * as XLSX from 'xlsx';
-import { Registration } from '../types';
+import { Registration, Activity } from '../types';
 
-export const exportToExcel = (registrations: Registration[]): void => {
+export const exportToExcel = (registrations: Registration[], activities: Activity[]): void => {
+  const activityNameById: Record<string, string> = {};
+  for (const a of activities) activityNameById[a.id] = a.name;
+
   const data = registrations.map(reg => ({
+    'Activité': activityNameById[reg.activityId] ?? '',
     'Nom': reg.lastName,
     'Prénoms': reg.firstName,
     'Téléphone': reg.phone,

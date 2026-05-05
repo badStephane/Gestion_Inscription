@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { getRegistrations, deleteRegistration } from '../utils/storage';
 import { exportToExcel } from '../utils/excelExport';
 import { exportDatabase, importDatabase } from '../utils/dbBackup';
-import { Registration } from '../types';
+import { getActivities } from '../utils/activities';
+import { Registration, Activity } from '../types';
 import ConfirmModal from './ConfirmModal';
 import Toast, { ToastVariant } from './Toast';
 import {
@@ -51,8 +52,10 @@ const compareRegistrations = (
 const RegistrationList: React.FC = () => {
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [filteredRegistrations, setFilteredRegistrations] = useState<Registration[]>([]);
+  const [activities, setActivities] = useState<Activity[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterPayment, setFilterPayment] = useState('');
+  const [filterActivity, setFilterActivity] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
@@ -71,18 +74,19 @@ const RegistrationList: React.FC = () => {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, filterPayment, sortKey, sortDirection, pageSize]);
+  }, [searchTerm, filterPayment, filterActivity, sortKey, sortDirection, pageSize]);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const data = await getRegistrations();
+        const [data, acts] = await Promise.all([getRegistrations(), getActivities(true)]);
         if (cancelled) return;
         setRegistrations(data);
         setFilteredRegistrations(data);
+        setActivities(acts);
       } catch (error) {
-        console.error('Error loading registrations:', error);
+        console.error('Error loading registrations or activities:', error);
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -92,9 +96,15 @@ const RegistrationList: React.FC = () => {
     };
   }, []);
 
+  const activitiesById = useMemo(() => {
+    const map: Record<string, Activity> = {};
+    for (const a of activities) map[a.id] = a;
+    return map;
+  }, [activities]);
+
   useEffect(() => {
     applyFilters();
-  }, [searchTerm, filterPayment, registrations, sortKey, sortDirection]);
+  }, [searchTerm, filterPayment, filterActivity, registrations, sortKey, sortDirection]);
 
   const applyFilters = () => {
     let filtered = [...registrations];
@@ -112,6 +122,10 @@ const RegistrationList: React.FC = () => {
 
     if (filterPayment) {
       filtered = filtered.filter(reg => reg.paymentType === filterPayment);
+    }
+
+    if (filterActivity) {
+      filtered = filtered.filter(reg => reg.activityId === filterActivity);
     }
 
     if (sortKey) {
@@ -144,7 +158,7 @@ const RegistrationList: React.FC = () => {
 
   const handleExport = () => {
     if (filteredRegistrations.length > 0) {
-      exportToExcel(filteredRegistrations);
+      exportToExcel(filteredRegistrations, activities);
     }
   };
 
@@ -256,6 +270,21 @@ const RegistrationList: React.FC = () => {
           />
         </div>
 
+        {/* Activity filter */}
+        <select
+          value={filterActivity}
+          onChange={(e) => setFilterActivity(e.target.value)}
+          className="input-field w-auto py-1"
+        >
+          <option value="">Toutes les activités</option>
+          {activities.map(a => (
+            <option key={a.id} value={a.id}>
+              {a.name}
+              {a.archivedAt ? ' (archivée)' : ''}
+            </option>
+          ))}
+        </select>
+
         {/* Payment filter */}
         <select
           value={filterPayment}
@@ -300,9 +329,9 @@ const RegistrationList: React.FC = () => {
         {filteredRegistrations.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-48 text-gray-400">
             <p className="text-sm">Aucune inscription trouvee</p>
-            {(searchTerm || filterPayment) && (
+            {(searchTerm || filterPayment || filterActivity) && (
               <button
-                onClick={() => { setSearchTerm(''); setFilterPayment(''); }}
+                onClick={() => { setSearchTerm(''); setFilterPayment(''); setFilterActivity(''); }}
                 className="mt-2 text-xs text-blue-600 hover:underline"
               >
                 Effacer les filtres
@@ -322,6 +351,7 @@ const RegistrationList: React.FC = () => {
                     Inscrit <SortIcon column="name" />
                   </button>
                 </th>
+                <th className="text-left px-3 py-2 font-medium text-gray-600">Activité</th>
                 <th className="text-left px-3 py-2 font-medium text-gray-600">Adresse</th>
                 <th className="text-left px-3 py-2 font-medium text-gray-600">
                   <button
@@ -364,6 +394,21 @@ const RegistrationList: React.FC = () => {
                     {registration.email && (
                       <div className="text-gray-400 truncate max-w-[180px]">{registration.email}</div>
                     )}
+                  </td>
+                  <td className="px-3 py-2">
+                    {(() => {
+                      const a = activitiesById[registration.activityId];
+                      if (!a) return <span className="text-gray-400">—</span>;
+                      return (
+                        <span className="inline-flex items-center gap-1.5 max-w-[160px]">
+                          <span
+                            className="h-2 w-2 rounded-full flex-shrink-0"
+                            style={{ backgroundColor: a.color }}
+                          />
+                          <span className="truncate text-gray-700" title={a.name}>{a.name}</span>
+                        </span>
+                      );
+                    })()}
                   </td>
                   <td className="px-3 py-2 text-gray-700">
                     <div className="truncate max-w-[180px]" title={registration.address}>
