@@ -13,10 +13,22 @@ const RegistrationList: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const data = getRegistrations();
-    setRegistrations(data);
-    setFilteredRegistrations(data);
-    setIsLoading(false);
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await getRegistrations();
+        if (cancelled) return;
+        setRegistrations(data);
+        setFilteredRegistrations(data);
+      } catch (error) {
+        console.error('Error loading registrations:', error);
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -50,10 +62,14 @@ const RegistrationList: React.FC = () => {
     }
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (window.confirm('Êtes-vous sûr de vouloir supprimer cette inscription?')) {
-      deleteRegistration(id);
-      setRegistrations(prev => prev.filter(reg => reg.id !== id));
+      try {
+        await deleteRegistration(id);
+        setRegistrations(prev => prev.filter(reg => reg.id !== id));
+      } catch (error) {
+        console.error('Error deleting registration:', error);
+      }
     }
   };
 
@@ -84,7 +100,7 @@ const RegistrationList: React.FC = () => {
             <Filter className="h-4 w-4 mr-1" />
             Filtres
           </button>
-          
+
           <button
             onClick={handleExport}
             disabled={filteredRegistrations.length === 0}

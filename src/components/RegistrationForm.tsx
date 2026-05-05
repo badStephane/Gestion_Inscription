@@ -41,16 +41,16 @@ const RegistrationForm: React.FC = () => {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (validate()) {
       setIsSubmitting(true);
-      
+
       try {
-        addRegistration(formData);
+        await addRegistration(formData);
         setIsSuccess(true);
-        
+
         setTimeout(() => {
           setIsSuccess(false);
           navigate('/registrations');
