@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, NavLink } from 'react-router-dom';
-import { ClipboardList, PlusCircle, Home as HomeIcon, Database, Lock, KeyRound, LifeBuoy } from 'lucide-react';
+import { ClipboardList, PlusCircle, Home as HomeIcon, Database, Lock, KeyRound, LifeBuoy, CalendarDays } from 'lucide-react';
 import Home from './pages/Home';
+import Activities from './pages/Activities';
 import RegistrationForm from './components/RegistrationForm';
 import RegistrationList from './components/RegistrationList';
 import AuthGate, { useAuth } from './components/AuthGate';
@@ -50,6 +51,10 @@ function AppShell() {
               <ClipboardList className="h-4 w-4" />
               Liste
             </NavLink>
+            <NavLink to="/activities" className={navLinkClass}>
+              <CalendarDays className="h-4 w-4" />
+              Activités
+            </NavLink>
           </nav>
 
           {/* Account actions */}
@@ -81,6 +86,7 @@ function AppShell() {
             <Route path="/add" element={<RegistrationForm />} />
             <Route path="/edit/:id" element={<RegistrationForm />} />
             <Route path="/registrations" element={<RegistrationList />} />
+            <Route path="/activities" element={<Activities />} />
           </Routes>
         </main>
       </div>
