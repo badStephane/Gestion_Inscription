@@ -1,91 +1,69 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ClipboardList, ArrowRight, FileSpreadsheet } from 'lucide-react';
+import { PlusCircle, ClipboardList } from 'lucide-react';
+import { getRegistrations } from '../utils/storage';
+import { Registration } from '../types';
+
+const formatAmount = (amount: number): string =>
+  `${new Intl.NumberFormat('fr-FR').format(amount)} F`;
 
 const Home: React.FC = () => {
+  const [stats, setStats] = useState({ total: 0, wave: 0, cash: 0, totalAmount: 0 });
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const data: Registration[] = await getRegistrations();
+        if (cancelled) return;
+        setStats({
+          total: data.length,
+          wave: data.filter(r => r.paymentType === 'wave').length,
+          cash: data.filter(r => r.paymentType === 'cash').length,
+          totalAmount: data.reduce((sum, r) => sum + r.amount, 0),
+        });
+      } catch {
+        // DB may not be available in browser-only mode
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            Système de Gestion des Inscriptions
-          </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Un outil simple et efficace pour gérer vos inscriptions
-          </p>
+    <div className="p-6 max-w-4xl">
+      <h1 className="text-lg font-semibold text-gray-800 mb-6">Tableau de bord</h1>
+
+      {/* Stats cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
+        <div className="panel p-4">
+          <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Total inscriptions</p>
+          <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
         </div>
-        
-        <div className="grid md:grid-cols-2 gap-8 mb-12">
-          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-8 rounded-xl shadow-sm border border-blue-100 transition-all duration-300 hover:shadow-md">
-            <div className="mb-6">
-              <div className="inline-flex items-center justify-center p-3 bg-blue-600 text-white rounded-lg mb-4">
-                <ClipboardList className="h-8 w-8" />
-              </div>
-              <h2 className="text-2xl font-bold text-gray-800 mb-2">Gestion des Inscriptions</h2>
-              <p className="text-gray-600">
-                Enregistrez facilement les nouvelles inscriptions avec toutes les informations nécessaires.
-              </p>
-            </div>
-            <Link
-              to="/add"
-              className="inline-flex items-center text-blue-600 font-medium hover:text-blue-800 transition-colors group"
-            >
-              Ajouter une inscription
-              <ArrowRight className="ml-1 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-            </Link>
-          </div>
-          
-          <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-8 rounded-xl shadow-sm border border-purple-100 transition-all duration-300 hover:shadow-md">
-            <div className="mb-6">
-              <div className="inline-flex items-center justify-center p-3 bg-purple-600 text-white rounded-lg mb-4">
-                <FileSpreadsheet className="h-8 w-8" />
-              </div>
-              <h2 className="text-2xl font-bold text-gray-800 mb-2">Exportation Excel</h2>
-              <p className="text-gray-600">
-                Générez et téléchargez facilement des rapports Excel pour toutes vos inscriptions.
-              </p>
-            </div>
-            <Link
-              to="/registrations"
-              className="inline-flex items-center text-purple-600 font-medium hover:text-purple-800 transition-colors group"
-            >
-              Voir les inscriptions
-              <ArrowRight className="ml-1 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-            </Link>
-          </div>
+        <div className="panel p-4">
+          <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Montant total</p>
+          <p className="text-2xl font-bold text-gray-900">{formatAmount(stats.totalAmount)}</p>
         </div>
-        
-        <div className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200">
-          <div className="p-8">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">Fonctionnalités</h2>
-            <ul className="space-y-3">
-              <li className="flex items-start">
-                <div className="flex-shrink-0">
-                  <div className="h-5 w-5 rounded-full bg-green-500 flex items-center justify-center text-white text-xs">✓</div>
-                </div>
-                <p className="ml-3 text-gray-600">Formulaire d'inscription complet et intuitif</p>
-              </li>
-              <li className="flex items-start">
-                <div className="flex-shrink-0">
-                  <div className="h-5 w-5 rounded-full bg-green-500 flex items-center justify-center text-white text-xs">✓</div>
-                </div>
-                <p className="ml-3 text-gray-600">Suivi des modes de paiement (Wave ou espèce)</p>
-              </li>
-              <li className="flex items-start">
-                <div className="flex-shrink-0">
-                  <div className="h-5 w-5 rounded-full bg-green-500 flex items-center justify-center text-white text-xs">✓</div>
-                </div>
-                <p className="ml-3 text-gray-600">Exportation des données au format Excel</p>
-              </li>
-              <li className="flex items-start">
-                <div className="flex-shrink-0">
-                  <div className="h-5 w-5 rounded-full bg-green-500 flex items-center justify-center text-white text-xs">✓</div>
-                </div>
-                <p className="ml-3 text-gray-600">Recherche et filtrage avancés</p>
-              </li>
-            </ul>
-          </div>
+        <div className="panel p-4">
+          <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Paiements Wave</p>
+          <p className="text-2xl font-bold text-purple-700">{stats.wave}</p>
         </div>
+        <div className="panel p-4">
+          <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Paiements Espece</p>
+          <p className="text-2xl font-bold text-emerald-700">{stats.cash}</p>
+        </div>
+      </div>
+
+      {/* Quick actions */}
+      <h2 className="text-sm font-medium text-gray-600 uppercase tracking-wide mb-3">Actions rapides</h2>
+      <div className="flex flex-wrap gap-2">
+        <Link to="/add" className="btn btn-primary">
+          <PlusCircle className="h-3.5 w-3.5" />
+          Nouvelle inscription
+        </Link>
+        <Link to="/registrations" className="btn btn-default">
+          <ClipboardList className="h-3.5 w-3.5" />
+          Voir la liste
+        </Link>
       </div>
     </div>
   );
