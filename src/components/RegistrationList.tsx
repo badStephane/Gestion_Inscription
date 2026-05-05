@@ -5,6 +5,9 @@ import { exportDatabase, importDatabase } from '../utils/dbBackup';
 import { Registration } from '../types';
 import { Download, Search, Trash2, Filter, Save, Upload } from 'lucide-react';
 
+const formatAmount = (amount: number): string =>
+  `${new Intl.NumberFormat('fr-FR').format(amount)} F`;
+
 const RegistrationList: React.FC = () => {
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [filteredRegistrations, setFilteredRegistrations] = useState<Registration[]>([]);
@@ -42,9 +45,11 @@ const RegistrationList: React.FC = () => {
     // Apply search
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(reg => 
-        reg.firstName.toLowerCase().includes(term) || 
+      filtered = filtered.filter(reg =>
+        reg.firstName.toLowerCase().includes(term) ||
         reg.lastName.toLowerCase().includes(term) ||
+        reg.phone.toLowerCase().includes(term) ||
+        (reg.email?.toLowerCase().includes(term) ?? false) ||
         reg.address.toLowerCase().includes(term)
       );
     }
@@ -176,7 +181,7 @@ const RegistrationList: React.FC = () => {
                 <input
                   type="text"
                   id="search"
-                  placeholder="Nom, prénom, adresse..."
+                  placeholder="Nom, prénom, téléphone, email, adresse..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -230,10 +235,16 @@ const RegistrationList: React.FC = () => {
             <thead className="bg-gray-50">
               <tr>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Nom & Prénoms
+                  Inscrit
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date d'inscription
+                  Adresse
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Date
+                </th>
+                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Montant
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Paiement
@@ -247,18 +258,31 @@ const RegistrationList: React.FC = () => {
               {filteredRegistrations.map(registration => (
                 <tr key={registration.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{registration.lastName} {registration.firstName}</div>
-                    <div className="text-sm text-gray-500 truncate max-w-xs">{registration.address}</div>
+                    <div className="text-sm font-medium text-gray-900">
+                      {registration.lastName} {registration.firstName}
+                    </div>
+                    <div className="text-sm text-gray-500">{registration.phone}</div>
+                    {registration.email && (
+                      <div className="text-xs text-gray-400 truncate max-w-xs">{registration.email}</div>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-700">
+                    <div className="truncate max-w-xs" title={registration.address}>
+                      {registration.address}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900">
                       {new Date(registration.registrationDate).toLocaleDateString()}
                     </div>
                   </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-gray-900">
+                    {formatAmount(registration.amount)}
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      registration.paymentType === 'wave' 
-                        ? 'bg-purple-100 text-purple-800' 
+                      registration.paymentType === 'wave'
+                        ? 'bg-purple-100 text-purple-800'
                         : 'bg-green-100 text-green-800'
                     }`}>
                       {registration.paymentType === 'wave' ? 'Wave' : 'Espèce'}
@@ -268,7 +292,7 @@ const RegistrationList: React.FC = () => {
                     <button
                       onClick={() => handleDelete(registration.id)}
                       className="text-red-600 hover:text-red-900 transition-colors"
-                      aria-label="Delete"
+                      aria-label="Supprimer"
                     >
                       <Trash2 className="h-5 w-5" />
                     </button>
