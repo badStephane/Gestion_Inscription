@@ -1,7 +1,14 @@
 import React, { useEffect, useState, useRef, createContext, useContext, useCallback } from 'react';
 import { Lock, Eye, EyeOff, AlertCircle, ShieldCheck, KeyRound } from 'lucide-react';
-import { hasPassword, setPassword, verifyPassword, resetAuthAndData } from '../utils/auth';
+import {
+  hasPassword,
+  setPassword,
+  verifyPassword,
+  resetAuthAndData,
+  hasRecoveryCode,
+} from '../utils/auth';
 import ConfirmModal from './ConfirmModal';
+import RecoveryUnlockModal from './RecoveryUnlockModal';
 
 interface AuthGateProps {
   children: React.ReactNode;
@@ -35,6 +42,8 @@ const AuthGate: React.FC<AuthGateProps> = ({ children }) => {
   const [busy, setBusy] = useState(false);
   const [shake, setShake] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
+  const [recoveryUnlockOpen, setRecoveryUnlockOpen] = useState(false);
+  const [recoveryAvailable, setRecoveryAvailable] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -59,6 +68,18 @@ const AuthGate: React.FC<AuthGateProps> = ({ children }) => {
       const t = setTimeout(() => inputRef.current?.focus(), 50);
       return () => clearTimeout(t);
     }
+  }, [phase]);
+
+  useEffect(() => {
+    if (phase !== 'lock') return;
+    let cancelled = false;
+    hasRecoveryCode()
+      .then(v => { if (!cancelled) setRecoveryAvailable(v); })
+      .catch(err => {
+        console.error('Error checking recovery code:', err);
+        if (!cancelled) setRecoveryAvailable(false);
+      });
+    return () => { cancelled = true; };
   }, [phase]);
 
   const triggerShake = () => {
@@ -261,7 +282,9 @@ const AuthGate: React.FC<AuthGateProps> = ({ children }) => {
             <div className="text-center pt-1">
               <button
                 type="button"
-                onClick={() => setResetOpen(true)}
+                onClick={() =>
+                  recoveryAvailable ? setRecoveryUnlockOpen(true) : setResetOpen(true)
+                }
                 className="text-xs text-gray-500 hover:text-gray-700 hover:underline"
               >
                 Mot de passe oublié ?
@@ -279,6 +302,18 @@ const AuthGate: React.FC<AuthGateProps> = ({ children }) => {
         variant="danger"
         onConfirm={handleReset}
         onCancel={() => setResetOpen(false)}
+      />
+
+      <RecoveryUnlockModal
+        open={recoveryUnlockOpen}
+        onClose={() => setRecoveryUnlockOpen(false)}
+        onSuccess={() => {
+          setRecoveryUnlockOpen(false);
+          setPassword1('');
+          setPassword2('');
+          setError(null);
+          setPhase('unlocked');
+        }}
       />
     </div>
   );

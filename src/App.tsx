@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, NavLink } from 'react-router-dom';
-import { ClipboardList, PlusCircle, Home as HomeIcon, Database, Lock, KeyRound } from 'lucide-react';
+import { ClipboardList, PlusCircle, Home as HomeIcon, Database, Lock, KeyRound, LifeBuoy } from 'lucide-react';
 import Home from './pages/Home';
 import RegistrationForm from './components/RegistrationForm';
 import RegistrationList from './components/RegistrationList';
 import AuthGate, { useAuth } from './components/AuthGate';
 import ChangePasswordModal from './components/ChangePasswordModal';
+import RecoveryCodeModal from './components/RecoveryCodeModal';
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   `flex items-center gap-2 px-3 py-2 rounded text-sm transition-colors duration-100 ${
@@ -20,6 +21,7 @@ const accountActionClass =
 function AppShell() {
   const { lock } = useAuth();
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+  const [recoveryCodeOpen, setRecoveryCodeOpen] = useState(false);
 
   return (
     <Router>
@@ -56,6 +58,10 @@ function AppShell() {
               <KeyRound className="h-4 w-4" />
               Mot de passe
             </button>
+            <button onClick={() => setRecoveryCodeOpen(true)} className={accountActionClass}>
+              <LifeBuoy className="h-4 w-4" />
+              Code de récupération
+            </button>
             <button onClick={lock} className={accountActionClass}>
               <Lock className="h-4 w-4" />
               Verrouiller
@@ -82,6 +88,11 @@ function AppShell() {
       <ChangePasswordModal
         open={changePasswordOpen}
         onClose={() => setChangePasswordOpen(false)}
+      />
+
+      <RecoveryCodeModal
+        open={recoveryCodeOpen}
+        onClose={() => setRecoveryCodeOpen(false)}
       />
     </Router>
   );
