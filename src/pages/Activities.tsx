@@ -147,7 +147,7 @@ const Activities: React.FC = () => {
               </span>
             )}
             {a.defaultAmount !== undefined && a.defaultAmount > 0 && (
-              <span>{formatAmount(a.defaultAmount)}</span>
+              <span className="tabular-nums">{formatAmount(a.defaultAmount)}</span>
             )}
             <span className="inline-flex items-center gap-1">
               <Users className="h-3 w-3" />
@@ -158,27 +158,32 @@ const Activities: React.FC = () => {
         <div className="flex items-center gap-1 flex-shrink-0">
           <button
             onClick={() => handleEdit(a)}
-            className="p-1.5 rounded hover:bg-gray-100 text-gray-600"
+            aria-label={`Modifier ${a.name}`}
             title="Modifier"
+            className="p-1.5 rounded hover:bg-gray-100 text-gray-600"
           >
-            <Pencil className="h-3.5 w-3.5" />
+            <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
           </button>
           {!isDefault && (
             <button
               onClick={() => setArchiveTarget(a)}
-              className="p-1.5 rounded hover:bg-gray-100 text-gray-600"
+              aria-label={`${isArchived ? 'Réactiver' : 'Archiver'} ${a.name}`}
               title={isArchived ? 'Réactiver' : 'Archiver'}
+              className="p-1.5 rounded hover:bg-gray-100 text-gray-600"
             >
-              {isArchived ? <ArchiveRestore className="h-3.5 w-3.5" /> : <Archive className="h-3.5 w-3.5" />}
+              {isArchived
+                ? <ArchiveRestore className="h-3.5 w-3.5" aria-hidden="true" />
+                : <Archive className="h-3.5 w-3.5" aria-hidden="true" />}
             </button>
           )}
           {!isDefault && count === 0 && (
             <button
               onClick={() => setDeleteTarget(a)}
-              className="p-1.5 rounded hover:bg-red-50 text-red-600"
+              aria-label={`Supprimer ${a.name}`}
               title="Supprimer"
+              className="p-1.5 rounded hover:bg-red-50 text-red-600"
             >
-              <Trash2 className="h-3.5 w-3.5" />
+              <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
             </button>
           )}
         </div>

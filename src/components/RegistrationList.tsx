@@ -158,13 +158,18 @@ const RegistrationList: React.FC = () => {
 
   const SortIcon: React.FC<{ column: SortKey }> = ({ column }) => {
     if (sortKey !== column) {
-      return <ChevronsUpDown className="h-3 w-3 ml-0.5 text-gray-400" />;
+      return <ChevronsUpDown className="h-3 w-3 ml-0.5 text-gray-400" aria-hidden="true" />;
     }
     return sortDirection === 'asc' ? (
-      <ChevronUp className="h-3 w-3 ml-0.5 text-gray-700" />
+      <ChevronUp className="h-3 w-3 ml-0.5 text-gray-700" aria-hidden="true" />
     ) : (
-      <ChevronDown className="h-3 w-3 ml-0.5 text-gray-700" />
+      <ChevronDown className="h-3 w-3 ml-0.5 text-gray-700" aria-hidden="true" />
     );
+  };
+
+  const ariaSortFor = (column: SortKey): 'ascending' | 'descending' | 'none' => {
+    if (sortKey !== column) return 'none';
+    return sortDirection === 'asc' ? 'ascending' : 'descending';
   };
 
   const handleExport = () => {
@@ -236,8 +241,53 @@ const RegistrationList: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-500 border-t-transparent"></div>
+      <div className="h-full flex flex-col" aria-busy="true" aria-live="polite">
+        {/* Stats strip skeleton */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-2 px-3 py-2 border-b border-gray-200 bg-white">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="panel px-3 py-2">
+              <div className="skeleton h-2.5 w-16 rounded mb-1.5" />
+              <div className="skeleton h-4 w-20 rounded" />
+            </div>
+          ))}
+        </div>
+
+        {/* Toolbar skeleton */}
+        <div className="toolbar">
+          <div className="skeleton h-7 w-48 rounded" />
+          <div className="skeleton h-7 w-36 rounded" />
+          <div className="skeleton h-7 w-32 rounded" />
+          <div className="skeleton h-7 w-20 rounded ml-2" />
+          <div className="skeleton h-7 w-28 rounded" />
+        </div>
+
+        {/* Table skeleton */}
+        <div className="flex-1 overflow-hidden">
+          <table className="w-full text-xs">
+            <thead className="bg-gray-50 border-b border-gray-200">
+              <tr>
+                {Array.from({ length: 7 }).map((_, i) => (
+                  <th key={i} className="px-3 py-2">
+                    <div className="skeleton h-3 w-16 rounded" />
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <tr key={i}>
+                  {Array.from({ length: 7 }).map((_, j) => (
+                    <td key={j} className="px-3 py-2.5">
+                      <div className="skeleton h-3 rounded" style={{ width: `${50 + ((i * 7 + j) % 5) * 10}%` }} />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <span className="sr-only">Chargement des inscriptions...</span>
       </div>
     );
   }
@@ -249,27 +299,27 @@ const RegistrationList: React.FC = () => {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-2 px-3 py-2 border-b border-gray-200 bg-white">
           <div className="panel px-3 py-2">
             <div className="text-[10px] font-medium uppercase tracking-wider text-gray-500">Inscriptions</div>
-            <div className="text-base font-semibold text-gray-900 mt-0.5">{stats.total}</div>
+            <div className="text-base font-semibold text-gray-900 tabular-nums mt-0.5">{stats.total}</div>
           </div>
           <div className="panel px-3 py-2">
             <div className="text-[10px] font-medium uppercase tracking-wider text-gray-500">Montant total</div>
-            <div className="text-base font-semibold text-gray-900 mt-0.5">{formatAmount(stats.totalAmount)}</div>
+            <div className="text-base font-semibold text-gray-900 tabular-nums mt-0.5">{formatAmount(stats.totalAmount)}</div>
           </div>
           <div className="panel px-3 py-2 border-l-2 border-l-purple-400">
             <div className="text-[10px] font-medium uppercase tracking-wider text-purple-700">Wave</div>
-            <div className="text-base font-semibold text-gray-900 mt-0.5">
+            <div className="text-base font-semibold text-gray-900 tabular-nums mt-0.5">
               {stats.waveCount} <span className="text-xs font-normal text-gray-500">· {formatAmount(stats.waveAmount)}</span>
             </div>
           </div>
           <div className="panel px-3 py-2 border-l-2 border-l-orange-400">
             <div className="text-[10px] font-medium uppercase tracking-wider text-orange-700">Orange Money</div>
-            <div className="text-base font-semibold text-gray-900 mt-0.5">
+            <div className="text-base font-semibold text-gray-900 tabular-nums mt-0.5">
               {stats.orangeCount} <span className="text-xs font-normal text-gray-500">· {formatAmount(stats.orangeAmount)}</span>
             </div>
           </div>
           <div className="panel px-3 py-2 border-l-2 border-l-emerald-400">
             <div className="text-[10px] font-medium uppercase tracking-wider text-emerald-700">Espèce</div>
-            <div className="text-base font-semibold text-gray-900 mt-0.5">
+            <div className="text-base font-semibold text-gray-900 tabular-nums mt-0.5">
               {stats.cashCount} <span className="text-xs font-normal text-gray-500">· {formatAmount(stats.cashAmount)}</span>
             </div>
           </div>
@@ -363,7 +413,7 @@ const RegistrationList: React.FC = () => {
           <table className="w-full text-xs">
             <thead className="bg-gray-50 border-b border-gray-200 sticky top-0">
               <tr>
-                <th className="text-left px-3 py-2 font-medium text-gray-600">
+                <th aria-sort={ariaSortFor('name')} className="text-left px-3 py-2 font-medium text-gray-600">
                   <button
                     type="button"
                     onClick={() => toggleSort('name')}
@@ -374,7 +424,7 @@ const RegistrationList: React.FC = () => {
                 </th>
                 <th className="text-left px-3 py-2 font-medium text-gray-600">Activité</th>
                 <th className="text-left px-3 py-2 font-medium text-gray-600">Adresse</th>
-                <th className="text-left px-3 py-2 font-medium text-gray-600">
+                <th aria-sort={ariaSortFor('date')} className="text-left px-3 py-2 font-medium text-gray-600">
                   <button
                     type="button"
                     onClick={() => toggleSort('date')}
@@ -383,7 +433,7 @@ const RegistrationList: React.FC = () => {
                     Date <SortIcon column="date" />
                   </button>
                 </th>
-                <th className="text-right px-3 py-2 font-medium text-gray-600">
+                <th aria-sort={ariaSortFor('amount')} className="text-right px-3 py-2 font-medium text-gray-600">
                   <button
                     type="button"
                     onClick={() => toggleSort('amount')}
@@ -392,7 +442,7 @@ const RegistrationList: React.FC = () => {
                     Montant <SortIcon column="amount" />
                   </button>
                 </th>
-                <th className="text-left px-3 py-2 font-medium text-gray-600">
+                <th aria-sort={ariaSortFor('payment')} className="text-left px-3 py-2 font-medium text-gray-600">
                   <button
                     type="button"
                     onClick={() => toggleSort('payment')}
@@ -433,10 +483,10 @@ const RegistrationList: React.FC = () => {
                       {registration.address}
                     </div>
                   </td>
-                  <td className="px-3 py-2 text-gray-700 whitespace-nowrap">
+                  <td className="px-3 py-2 text-gray-700 tabular-nums whitespace-nowrap">
                     {new Date(registration.registrationDate).toLocaleDateString('fr-FR')}
                   </td>
-                  <td className="px-3 py-2 text-right font-medium text-gray-900 whitespace-nowrap">
+                  <td className="px-3 py-2 text-right font-medium text-gray-900 tabular-nums whitespace-nowrap">
                     {formatAmount(registration.amount)}
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap">
@@ -448,15 +498,17 @@ const RegistrationList: React.FC = () => {
                     <div className="flex items-center justify-center gap-1">
                       <Link
                         to={`/edit/${registration.id}`}
-                        className="p-1 rounded hover:bg-blue-100 text-blue-600 transition-colors"
+                        aria-label={`Modifier l'inscription de ${registration.lastName} ${registration.firstName}`}
                         title="Modifier"
+                        className="p-1.5 rounded hover:bg-blue-100 text-blue-600 transition-colors"
                       >
                         <Pencil className="h-3.5 w-3.5" />
                       </Link>
                       <button
                         onClick={() => setDeleteTargetId(registration.id)}
-                        className="p-1 rounded hover:bg-red-100 text-red-600 transition-colors"
+                        aria-label={`Supprimer l'inscription de ${registration.lastName} ${registration.firstName}`}
                         title="Supprimer"
+                        className="p-1.5 rounded hover:bg-red-100 text-red-600 transition-colors"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
@@ -491,14 +543,18 @@ const RegistrationList: React.FC = () => {
               <button
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                 disabled={safePage <= 1}
-                className="p-1 rounded hover:bg-gray-200 disabled:opacity-30 disabled:pointer-events-none"
+                aria-label="Page précédente"
+                title="Page précédente"
+                className="p-1.5 rounded hover:bg-gray-200 disabled:opacity-30 disabled:pointer-events-none"
               >
                 <ChevronLeft className="h-3.5 w-3.5" />
               </button>
               <button
                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                 disabled={safePage >= totalPages}
-                className="p-1 rounded hover:bg-gray-200 disabled:opacity-30 disabled:pointer-events-none"
+                aria-label="Page suivante"
+                title="Page suivante"
+                className="p-1.5 rounded hover:bg-gray-200 disabled:opacity-30 disabled:pointer-events-none"
               >
                 <ChevronRight className="h-3.5 w-3.5" />
               </button>
