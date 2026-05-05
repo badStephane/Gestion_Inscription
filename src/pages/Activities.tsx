@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Pencil, Archive, ArchiveRestore, Trash2, CalendarDays, Users, Lock, FileUp } from 'lucide-react';
+import { Plus, Pencil, Archive, ArchiveRestore, Trash2, CalendarDays, Users, Lock, FileUp, Download } from 'lucide-react';
 import { Activity, DEFAULT_ACTIVITY_ID } from '../types';
 import {
   getActivities,
@@ -8,10 +8,15 @@ import {
   countRegistrationsForActivity,
   deleteActivity,
 } from '../utils/activities';
+import { getRegistrations } from '../utils/storage';
+import { exportToExcel } from '../utils/excelExport';
 import ActivityFormModal from '../components/ActivityFormModal';
 import ConfirmModal from '../components/ConfirmModal';
 import Toast, { ToastVariant } from '../components/Toast';
 import ImportRegistrationsModal from '../components/ImportRegistrationsModal';
+
+const slugify = (s: string): string =>
+  s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '');
 
 const formatAmount = (amount: number): string =>
   `${new Intl.NumberFormat('fr-FR').format(amount)} F`;
@@ -107,6 +112,24 @@ const Activities: React.FC = () => {
     }
   };
 
+  const handleExportActivity = async (activity: Activity) => {
+    try {
+      const all = await getRegistrations();
+      const forActivity = all.filter(r => r.activityId === activity.id);
+      if (forActivity.length === 0) {
+        showToast('error', `Aucune inscription pour « ${activity.name} ».`);
+        return;
+      }
+      const today = new Date().toISOString().split('T')[0];
+      const filename = `${slugify(activity.name)}_${today}`;
+      exportToExcel(forActivity, activities, filename);
+      showToast('success', `${forActivity.length} inscription${forActivity.length > 1 ? 's' : ''} exportée${forActivity.length > 1 ? 's' : ''}.`);
+    } catch (error) {
+      console.error('Error exporting activity:', error);
+      showToast('error', "Erreur lors de l'exportation.");
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -158,6 +181,16 @@ const Activities: React.FC = () => {
           </div>
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
+          {count > 0 && (
+            <button
+              onClick={() => handleExportActivity(a)}
+              aria-label={`Exporter les inscriptions de ${a.name} en Excel`}
+              title="Exporter Excel"
+              className="p-1.5 rounded hover:bg-emerald-100 text-emerald-600"
+            >
+              <Download className="h-3.5 w-3.5" aria-hidden="true" />
+            </button>
+          )}
           {!isArchived && (
             <button
               onClick={() => setImportTarget(a)}
