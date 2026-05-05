@@ -4,10 +4,44 @@ import { getRegistrations, deleteRegistration } from '../utils/storage';
 import { exportToExcel } from '../utils/excelExport';
 import { exportDatabase, importDatabase } from '../utils/dbBackup';
 import { Registration } from '../types';
-import { Download, Search, Trash2, Filter, Save, Upload, Pencil } from 'lucide-react';
+import {
+  Download,
+  Search,
+  Trash2,
+  Filter,
+  Save,
+  Upload,
+  Pencil,
+  ChevronUp,
+  ChevronDown,
+  ChevronsUpDown,
+} from 'lucide-react';
+
+type SortKey = 'name' | 'date' | 'amount' | 'payment';
+type SortDirection = 'asc' | 'desc';
 
 const formatAmount = (amount: number): string =>
   `${new Intl.NumberFormat('fr-FR').format(amount)} F`;
+
+const compareRegistrations = (
+  a: Registration,
+  b: Registration,
+  key: SortKey
+): number => {
+  switch (key) {
+    case 'name': {
+      const an = `${a.lastName} ${a.firstName}`.toLowerCase();
+      const bn = `${b.lastName} ${b.firstName}`.toLowerCase();
+      return an.localeCompare(bn, 'fr');
+    }
+    case 'date':
+      return a.registrationDate.localeCompare(b.registrationDate);
+    case 'amount':
+      return a.amount - b.amount;
+    case 'payment':
+      return a.paymentType.localeCompare(b.paymentType);
+  }
+};
 
 const RegistrationList: React.FC = () => {
   const [registrations, setRegistrations] = useState<Registration[]>([]);
@@ -16,6 +50,8 @@ const RegistrationList: React.FC = () => {
   const [filterPayment, setFilterPayment] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [sortKey, setSortKey] = useState<SortKey | null>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
   useEffect(() => {
     let cancelled = false;
@@ -38,12 +74,11 @@ const RegistrationList: React.FC = () => {
 
   useEffect(() => {
     applyFilters();
-  }, [searchTerm, filterPayment, registrations]);
+  }, [searchTerm, filterPayment, registrations, sortKey, sortDirection]);
 
   const applyFilters = () => {
     let filtered = [...registrations];
-    
-    // Apply search
+
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(reg =>
@@ -54,13 +89,37 @@ const RegistrationList: React.FC = () => {
         reg.address.toLowerCase().includes(term)
       );
     }
-    
-    // Apply payment filter
+
     if (filterPayment) {
       filtered = filtered.filter(reg => reg.paymentType === filterPayment);
     }
-    
+
+    if (sortKey) {
+      const dir = sortDirection === 'asc' ? 1 : -1;
+      filtered.sort((a, b) => compareRegistrations(a, b, sortKey) * dir);
+    }
+
     setFilteredRegistrations(filtered);
+  };
+
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortDirection('asc');
+    }
+  };
+
+  const SortIcon: React.FC<{ column: SortKey }> = ({ column }) => {
+    if (sortKey !== column) {
+      return <ChevronsUpDown className="h-3 w-3 ml-1 text-gray-400" />;
+    }
+    return sortDirection === 'asc' ? (
+      <ChevronUp className="h-3 w-3 ml-1 text-gray-700" />
+    ) : (
+      <ChevronDown className="h-3 w-3 ml-1 text-gray-700" />
+    );
   };
 
   const handleExport = () => {
@@ -236,19 +295,43 @@ const RegistrationList: React.FC = () => {
             <thead className="bg-gray-50">
               <tr>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Inscrit
+                  <button
+                    type="button"
+                    onClick={() => toggleSort('name')}
+                    className="inline-flex items-center hover:text-gray-700"
+                  >
+                    Inscrit <SortIcon column="name" />
+                  </button>
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Adresse
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date
+                  <button
+                    type="button"
+                    onClick={() => toggleSort('date')}
+                    className="inline-flex items-center hover:text-gray-700"
+                  >
+                    Date <SortIcon column="date" />
+                  </button>
                 </th>
                 <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Montant
+                  <button
+                    type="button"
+                    onClick={() => toggleSort('amount')}
+                    className="inline-flex items-center hover:text-gray-700"
+                  >
+                    Montant <SortIcon column="amount" />
+                  </button>
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Paiement
+                  <button
+                    type="button"
+                    onClick={() => toggleSort('payment')}
+                    className="inline-flex items-center hover:text-gray-700"
+                  >
+                    Paiement <SortIcon column="payment" />
+                  </button>
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
