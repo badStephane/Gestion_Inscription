@@ -10,14 +10,14 @@ import ChangePasswordModal from './components/ChangePasswordModal';
 import RecoveryCodeModal from './components/RecoveryCodeModal';
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-  `flex items-center gap-2 px-3 py-2 rounded text-sm transition-colors duration-100 ${
+  `flex items-center gap-2 px-3 py-2.5 min-h-[44px] rounded text-sm transition-colors duration-100 ${
     isActive
       ? 'bg-gray-700/60 text-white font-medium'
       : 'text-gray-300 hover:bg-gray-700/40 hover:text-white'
   }`;
 
 const accountActionClass =
-  'w-full flex items-center gap-2 px-3 py-2 rounded text-sm text-gray-300 hover:bg-gray-700/40 hover:text-white transition-colors';
+  'w-full flex items-center gap-2 px-3 py-2.5 min-h-[44px] rounded text-sm text-gray-300 hover:bg-gray-700/40 hover:text-white transition-colors';
 
 function AppShell() {
   const { lock } = useAuth();

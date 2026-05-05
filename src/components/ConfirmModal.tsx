@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { AlertTriangle, X } from 'lucide-react';
 
 interface ConfirmModalProps {
@@ -23,31 +23,76 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
   onCancel,
 }) => {
   const cancelRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+  const [rendered, setRendered] = useState(false);
 
+  // Mount/unmount with animation
+  useEffect(() => {
+    if (open) {
+      setRendered(true);
+      requestAnimationFrame(() => requestAnimationFrame(() => setVisible(true)));
+    } else {
+      setVisible(false);
+      const timer = setTimeout(() => setRendered(false), 150);
+      return () => clearTimeout(timer);
+    }
+  }, [open]);
+
+  // Focus management
   useEffect(() => {
     if (!open) return;
-    cancelRef.current?.focus();
+    const t = setTimeout(() => cancelRef.current?.focus(), 50);
+    return () => clearTimeout(t);
+  }, [open]);
+
+  // Keyboard: Escape + Focus trap
+  useEffect(() => {
+    if (!open) return;
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onCancel();
+      if (e.key === 'Escape') {
+        onCancel();
+        return;
+      }
+      if (e.key === 'Tab' && dialogRef.current) {
+        const focusable = dialogRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
   }, [open, onCancel]);
 
-  if (!open) return null;
+  if (!rendered) return null;
 
   const confirmBtnClass = variant === 'danger' ? 'btn btn-danger' : 'btn btn-primary';
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+      className={`fixed inset-0 z-50 flex items-center justify-center transition-opacity duration-150 ${
+        visible ? 'bg-black/40 opacity-100' : 'bg-black/0 opacity-0'
+      }`}
       onClick={onCancel}
       role="dialog"
       aria-modal="true"
       aria-labelledby="confirm-modal-title"
     >
       <div
-        className="panel shadow-xl max-w-sm w-full mx-4 overflow-hidden"
+        ref={dialogRef}
+        className={`panel shadow-xl max-w-sm w-full mx-4 overflow-hidden transition-all duration-150 ${
+          visible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
+        }`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between px-4 py-3 border-b border-gray-200">
