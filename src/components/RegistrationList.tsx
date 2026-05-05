@@ -115,7 +115,6 @@ const RegistrationList: React.FC = () => {
         reg.firstName.toLowerCase().includes(term) ||
         reg.lastName.toLowerCase().includes(term) ||
         reg.phone.toLowerCase().includes(term) ||
-        (reg.email?.toLowerCase().includes(term) ?? false) ||
         reg.address.toLowerCase().includes(term)
       );
     }
@@ -391,9 +390,6 @@ const RegistrationList: React.FC = () => {
                       {registration.lastName} {registration.firstName}
                     </div>
                     <div className="text-gray-500">{registration.phone}</div>
-                    {registration.email && (
-                      <div className="text-gray-400 truncate max-w-[180px]">{registration.email}</div>
-                    )}
                   </td>
                   <td className="px-3 py-2">
                     {(() => {

@@ -6,7 +6,6 @@ interface Row {
   first_name: string;
   last_name: string;
   phone: string;
-  email: string | null;
   address: string;
   registration_date: string;
   payment_type: 'wave' | 'cash';
@@ -16,14 +15,13 @@ interface Row {
 }
 
 const COLUMNS =
-  'id, first_name, last_name, phone, email, address, registration_date, payment_type, amount, activity_id, created_at';
+  'id, first_name, last_name, phone, address, registration_date, payment_type, amount, activity_id, created_at';
 
 const rowToRegistration = (r: Row): Registration => ({
   id: r.id,
   firstName: r.first_name,
   lastName: r.last_name,
   phone: r.phone,
-  email: r.email ?? undefined,
   address: r.address,
   registrationDate: r.registration_date,
   paymentType: r.payment_type,
@@ -59,13 +57,12 @@ export const addRegistration = async (
     createdAt: Date.now(),
   };
   await db.execute(
-    `INSERT INTO registrations (${COLUMNS}) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+    `INSERT INTO registrations (${COLUMNS}) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
     [
       newRegistration.id,
       newRegistration.firstName,
       newRegistration.lastName,
       newRegistration.phone,
-      newRegistration.email ?? null,
       newRegistration.address,
       newRegistration.registrationDate,
       newRegistration.paymentType,
@@ -86,18 +83,16 @@ export const updateRegistration = async (
        first_name = $1,
        last_name = $2,
        phone = $3,
-       email = $4,
-       address = $5,
-       registration_date = $6,
-       payment_type = $7,
-       amount = $8,
-       activity_id = $9
-     WHERE id = $10`,
+       address = $4,
+       registration_date = $5,
+       payment_type = $6,
+       amount = $7,
+       activity_id = $8
+     WHERE id = $9`,
     [
       registration.firstName,
       registration.lastName,
       registration.phone,
-      registration.email ?? null,
       registration.address,
       registration.registrationDate,
       registration.paymentType,

@@ -10,7 +10,6 @@ export const exportToExcel = (registrations: Registration[], activities: Activit
     'Nom': reg.lastName,
     'Prénoms': reg.firstName,
     'Téléphone': reg.phone,
-    'Email': reg.email ?? '',
     'Adresse': reg.address,
     "Date d'inscription": new Date(reg.registrationDate).toLocaleDateString(),
     'Montant (F CFA)': reg.amount,

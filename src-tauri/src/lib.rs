@@ -62,6 +62,12 @@ pub fn run() {
             ALTER TABLE registrations ADD COLUMN activity_id TEXT NOT NULL DEFAULT '00000000-0000-0000-0000-000000000001';",
       kind: MigrationKind::Up,
     },
+    Migration {
+      version: 6,
+      description: "drop_email_from_registrations",
+      sql: "ALTER TABLE registrations DROP COLUMN email;",
+      kind: MigrationKind::Up,
+    },
   ];
 
   tauri::Builder::default()

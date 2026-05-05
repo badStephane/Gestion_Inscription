@@ -9,7 +9,6 @@ interface FormState {
   firstName: string;
   lastName: string;
   phone: string;
-  email: string;
   address: string;
   registrationDate: string;
   paymentType: 'wave' | 'cash';
@@ -18,7 +17,6 @@ interface FormState {
 }
 
 const PHONE_DIGITS_RE = /\d/g;
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const RegistrationForm: React.FC = () => {
   const navigate = useNavigate();
@@ -29,7 +27,6 @@ const RegistrationForm: React.FC = () => {
     firstName: '',
     lastName: '',
     phone: '',
-    email: '',
     address: '',
     registrationDate: new Date().toISOString().split('T')[0],
     paymentType: 'cash',
@@ -72,7 +69,6 @@ const RegistrationForm: React.FC = () => {
             firstName: existing.firstName,
             lastName: existing.lastName,
             phone: existing.phone,
-            email: existing.email ?? '',
             address: existing.address,
             registrationDate: existing.registrationDate,
             paymentType: existing.paymentType,
@@ -104,10 +100,6 @@ const RegistrationForm: React.FC = () => {
       newErrors.phone = 'Le telephone est requis';
     } else if (phoneDigits < 8) {
       newErrors.phone = 'Au moins 8 chiffres';
-    }
-
-    if (formData.email.trim() && !EMAIL_RE.test(formData.email.trim())) {
-      newErrors.email = 'Adresse email invalide';
     }
 
     if (!formData.address.trim()) newErrors.address = "L'adresse est requise";
@@ -153,12 +145,10 @@ const RegistrationForm: React.FC = () => {
       setIsSubmitting(true);
 
       try {
-        const trimmedEmail = formData.email.trim();
         const payload = {
           firstName: formData.firstName.trim(),
           lastName: formData.lastName.trim(),
           phone: formData.phone.trim(),
-          email: trimmedEmail || undefined,
           address: formData.address.trim(),
           registrationDate: formData.registrationDate,
           paymentType: formData.paymentType,
@@ -281,38 +271,21 @@ const RegistrationForm: React.FC = () => {
               </div>
             </div>
 
-            {/* Row: Phone + Email */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label htmlFor="phone" className="block text-xs font-medium text-gray-600 mb-1">
-                  Telephone <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="tel"
-                  id="phone"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  placeholder="07 07 07 07 07"
-                  className={`input-field ${errors.phone ? 'has-error' : ''}`}
-                />
-                {errors.phone && <p className="mt-0.5 text-xs text-red-500">{errors.phone}</p>}
-              </div>
-              <div>
-                <label htmlFor="email" className="block text-xs font-medium text-gray-600 mb-1">
-                  Email <span className="text-gray-400">(optionnel)</span>
-                </label>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder="exemple@email.com"
-                  className={`input-field ${errors.email ? 'has-error' : ''}`}
-                />
-                {errors.email && <p className="mt-0.5 text-xs text-red-500">{errors.email}</p>}
-              </div>
+            {/* Phone */}
+            <div>
+              <label htmlFor="phone" className="block text-xs font-medium text-gray-600 mb-1">
+                Telephone <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="tel"
+                id="phone"
+                name="phone"
+                value={formData.phone}
+                onChange={handleChange}
+                placeholder="07 07 07 07 07"
+                className={`input-field ${errors.phone ? 'has-error' : ''}`}
+              />
+              {errors.phone && <p className="mt-0.5 text-xs text-red-500">{errors.phone}</p>}
             </div>
 
             {/* Address */}

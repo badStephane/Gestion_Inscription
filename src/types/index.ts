@@ -3,7 +3,6 @@ export interface Registration {
   firstName: string;
   lastName: string;
   phone: string;
-  email?: string;
   address: string;
   registrationDate: string;
   paymentType: 'wave' | 'cash';
