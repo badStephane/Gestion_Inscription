@@ -68,6 +68,27 @@ pub fn run() {
       sql: "ALTER TABLE registrations DROP COLUMN email;",
       kind: MigrationKind::Up,
     },
+    Migration {
+      version: 7,
+      description: "add_orange_money_payment_type",
+      sql: "CREATE TABLE registrations_new (
+              id TEXT PRIMARY KEY NOT NULL,
+              first_name TEXT NOT NULL,
+              last_name TEXT NOT NULL,
+              phone TEXT NOT NULL DEFAULT '',
+              address TEXT NOT NULL,
+              registration_date TEXT NOT NULL,
+              payment_type TEXT NOT NULL CHECK(payment_type IN ('wave','cash','orange_money')),
+              amount REAL NOT NULL DEFAULT 0,
+              activity_id TEXT NOT NULL DEFAULT '00000000-0000-0000-0000-000000000001',
+              created_at INTEGER NOT NULL
+            );
+            INSERT INTO registrations_new (id, first_name, last_name, phone, address, registration_date, payment_type, amount, activity_id, created_at)
+              SELECT id, first_name, last_name, phone, address, registration_date, payment_type, amount, activity_id, created_at FROM registrations;
+            DROP TABLE registrations;
+            ALTER TABLE registrations_new RENAME TO registrations;",
+      kind: MigrationKind::Up,
+    },
   ];
 
   tauri::Builder::default()

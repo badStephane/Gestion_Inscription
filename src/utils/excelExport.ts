@@ -1,6 +1,12 @@
 import * as XLSX from 'xlsx';
 import { Registration, Activity } from '../types';
 
+const PAYMENT_LABEL: Record<Registration['paymentType'], string> = {
+  wave: 'Wave',
+  cash: 'Espèce',
+  orange_money: 'Orange Money',
+};
+
 export const exportToExcel = (registrations: Registration[], activities: Activity[]): void => {
   const activityNameById: Record<string, string> = {};
   for (const a of activities) activityNameById[a.id] = a.name;
@@ -13,7 +19,7 @@ export const exportToExcel = (registrations: Registration[], activities: Activit
     'Adresse': reg.address,
     "Date d'inscription": new Date(reg.registrationDate).toLocaleDateString(),
     'Montant (F CFA)': reg.amount,
-    'Type de paiement': reg.paymentType === 'wave' ? 'Wave' : 'Espèce',
+    'Type de paiement': PAYMENT_LABEL[reg.paymentType],
     'Date de création': new Date(reg.createdAt).toLocaleString(),
   }));
 

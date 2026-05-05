@@ -29,6 +29,18 @@ type SortDirection = 'asc' | 'desc';
 const formatAmount = (amount: number): string =>
   `${new Intl.NumberFormat('fr-FR').format(amount)} F`;
 
+const PAYMENT_LABEL: Record<Registration['paymentType'], string> = {
+  wave: 'Wave',
+  cash: 'Espèce',
+  orange_money: 'Orange Money',
+};
+
+const PAYMENT_BADGE_CLASS: Record<Registration['paymentType'], string> = {
+  wave: 'bg-purple-100 text-purple-700',
+  cash: 'bg-emerald-100 text-emerald-700',
+  orange_money: 'bg-orange-100 text-orange-700',
+};
+
 const compareRegistrations = (
   a: Registration,
   b: Registration,
@@ -202,6 +214,7 @@ const RegistrationList: React.FC = () => {
   const stats = useMemo(() => {
     const wave = registrations.filter(r => r.paymentType === 'wave');
     const cash = registrations.filter(r => r.paymentType === 'cash');
+    const orange = registrations.filter(r => r.paymentType === 'orange_money');
     const sum = (rs: Registration[]) => rs.reduce((acc, r) => acc + r.amount, 0);
     return {
       total: registrations.length,
@@ -210,6 +223,8 @@ const RegistrationList: React.FC = () => {
       waveAmount: sum(wave),
       cashCount: cash.length,
       cashAmount: sum(cash),
+      orangeCount: orange.length,
+      orangeAmount: sum(orange),
     };
   }, [registrations]);
 
@@ -231,7 +246,7 @@ const RegistrationList: React.FC = () => {
     <div className="h-full flex flex-col">
       {/* Stats strip */}
       {stats.total > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 px-3 py-2 border-b border-gray-200 bg-white">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-2 px-3 py-2 border-b border-gray-200 bg-white">
           <div className="panel px-3 py-2">
             <div className="text-[10px] font-medium uppercase tracking-wider text-gray-500">Inscriptions</div>
             <div className="text-base font-semibold text-gray-900 mt-0.5">{stats.total}</div>
@@ -246,8 +261,14 @@ const RegistrationList: React.FC = () => {
               {stats.waveCount} <span className="text-xs font-normal text-gray-500">· {formatAmount(stats.waveAmount)}</span>
             </div>
           </div>
+          <div className="panel px-3 py-2 border-l-2 border-l-orange-400">
+            <div className="text-[10px] font-medium uppercase tracking-wider text-orange-700">Orange Money</div>
+            <div className="text-base font-semibold text-gray-900 mt-0.5">
+              {stats.orangeCount} <span className="text-xs font-normal text-gray-500">· {formatAmount(stats.orangeAmount)}</span>
+            </div>
+          </div>
           <div className="panel px-3 py-2 border-l-2 border-l-emerald-400">
-            <div className="text-[10px] font-medium uppercase tracking-wider text-emerald-700">Espece</div>
+            <div className="text-[10px] font-medium uppercase tracking-wider text-emerald-700">Espèce</div>
             <div className="text-base font-semibold text-gray-900 mt-0.5">
               {stats.cashCount} <span className="text-xs font-normal text-gray-500">· {formatAmount(stats.cashAmount)}</span>
             </div>
@@ -291,8 +312,9 @@ const RegistrationList: React.FC = () => {
           className="input-field w-auto py-1"
         >
           <option value="">Tous les paiements</option>
-          <option value="cash">Espece</option>
+          <option value="cash">Espèce</option>
           <option value="wave">Wave</option>
+          <option value="orange_money">Orange Money</option>
         </select>
 
         <div className="h-4 w-px bg-gray-300 mx-1"></div>
@@ -418,12 +440,8 @@ const RegistrationList: React.FC = () => {
                     {formatAmount(registration.amount)}
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide ${
-                      registration.paymentType === 'wave'
-                        ? 'bg-purple-100 text-purple-700'
-                        : 'bg-emerald-100 text-emerald-700'
-                    }`}>
-                      {registration.paymentType === 'wave' ? 'Wave' : 'Espece'}
+                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide ${PAYMENT_BADGE_CLASS[registration.paymentType]}`}>
+                      {PAYMENT_LABEL[registration.paymentType]}
                     </span>
                   </td>
                   <td className="px-3 py-2">

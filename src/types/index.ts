@@ -5,7 +5,7 @@ export interface Registration {
   phone: string;
   address: string;
   registrationDate: string;
-  paymentType: 'wave' | 'cash';
+  paymentType: 'wave' | 'cash' | 'orange_money';
   amount: number;
   activityId: string;
   createdAt: number;

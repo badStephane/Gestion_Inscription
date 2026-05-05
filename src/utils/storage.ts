@@ -8,7 +8,7 @@ interface Row {
   phone: string;
   address: string;
   registration_date: string;
-  payment_type: 'wave' | 'cash';
+  payment_type: 'wave' | 'cash' | 'orange_money';
   amount: number;
   activity_id: string;
   created_at: number;

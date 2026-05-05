@@ -11,7 +11,7 @@ interface FormState {
   phone: string;
   address: string;
   registrationDate: string;
-  paymentType: 'wave' | 'cash';
+  paymentType: 'wave' | 'cash' | 'orange_money';
   amount: string;
   activityId: string;
 }
@@ -366,6 +366,17 @@ const RegistrationForm: React.FC = () => {
                     className="h-3.5 w-3.5 text-blue-600 border-gray-300"
                   />
                   <span className="text-sm text-gray-700">Wave</span>
+                </label>
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="paymentType"
+                    value="orange_money"
+                    checked={formData.paymentType === 'orange_money'}
+                    onChange={handleChange}
+                    className="h-3.5 w-3.5 text-blue-600 border-gray-300"
+                  />
+                  <span className="text-sm text-gray-700">Orange Money</span>
                 </label>
               </div>
             </div>
