@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, createContext, useContext, useCallback } from 'react';
 import { Lock, Eye, EyeOff, AlertCircle, ShieldCheck, KeyRound } from 'lucide-react';
 import { hasPassword, setPassword, verifyPassword, resetAuthAndData } from '../utils/auth';
 import ConfirmModal from './ConfirmModal';
@@ -10,6 +10,21 @@ interface AuthGateProps {
 type Phase = 'loading' | 'setup' | 'lock' | 'unlocked';
 
 const MIN_PASSWORD_LENGTH = 6;
+
+interface AuthContextValue {
+  lock: () => void;
+  changePassword: (current: string, next: string) => Promise<{ ok: boolean; error?: string }>;
+}
+
+const AuthContext = createContext<AuthContextValue | null>(null);
+
+export const useAuth = (): AuthContextValue => {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used within <AuthGate>');
+  return ctx;
+};
+
+export { MIN_PASSWORD_LENGTH };
 
 const AuthGate: React.FC<AuthGateProps> = ({ children }) => {
   const [phase, setPhase] = useState<Phase>('loading');
@@ -113,7 +128,38 @@ const AuthGate: React.FC<AuthGateProps> = ({ children }) => {
     }
   };
 
-  if (phase === 'unlocked') return <>{children}</>;
+  const lock = useCallback(() => {
+    setPassword1('');
+    setPassword2('');
+    setError(null);
+    setPhase('lock');
+  }, []);
+
+  const changePassword = useCallback(
+    async (current: string, next: string): Promise<{ ok: boolean; error?: string }> => {
+      if (next.length < MIN_PASSWORD_LENGTH) {
+        return { ok: false, error: `Le mot de passe doit faire au moins ${MIN_PASSWORD_LENGTH} caracteres.` };
+      }
+      try {
+        const okCurrent = await verifyPassword(current);
+        if (!okCurrent) return { ok: false, error: 'Mot de passe actuel incorrect.' };
+        await setPassword(next);
+        return { ok: true };
+      } catch (err) {
+        console.error('Error changing password:', err);
+        return { ok: false, error: 'Erreur lors du changement de mot de passe.' };
+      }
+    },
+    []
+  );
+
+  if (phase === 'unlocked') {
+    return (
+      <AuthContext.Provider value={{ lock, changePassword }}>
+        {children}
+      </AuthContext.Provider>
+    );
+  }
 
   if (phase === 'loading') {
     return (
