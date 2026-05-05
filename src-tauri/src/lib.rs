@@ -25,6 +25,18 @@ pub fn run() {
             ALTER TABLE registrations ADD COLUMN amount REAL NOT NULL DEFAULT 0;",
       kind: MigrationKind::Up,
     },
+    Migration {
+      version: 3,
+      description: "create_auth_settings_table",
+      sql: "CREATE TABLE IF NOT EXISTS auth_settings (
+              id INTEGER PRIMARY KEY CHECK (id = 1),
+              password_hash TEXT NOT NULL,
+              salt TEXT NOT NULL,
+              iterations INTEGER NOT NULL,
+              created_at INTEGER NOT NULL
+            );",
+      kind: MigrationKind::Up,
+    },
   ];
 
   tauri::Builder::default()
