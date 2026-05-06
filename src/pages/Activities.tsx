@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Pencil, Archive, ArchiveRestore, Trash2, CalendarDays, Users, Lock, FileUp, Download } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Plus, Pencil, Archive, ArchiveRestore, Trash2, CalendarDays, Users, Lock, FileUp, Download, BarChart3 } from 'lucide-react';
 import { Activity, DEFAULT_ACTIVITY_ID } from '../types';
 import {
   getActivities,
@@ -22,6 +23,7 @@ const formatAmount = (amount: number): string =>
   `${new Intl.NumberFormat('fr-FR').format(amount)} F`;
 
 const Activities: React.FC = () => {
+  const navigate = useNavigate();
   const [activities, setActivities] = useState<Activity[]>([]);
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(true);
@@ -181,6 +183,16 @@ const Activities: React.FC = () => {
           </div>
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
+          {count > 0 && (
+            <button
+              onClick={() => navigate(`/activities/${a.id}/stats`)}
+              aria-label={`Voir les statistiques de ${a.name}`}
+              title="Statistiques"
+              className="p-1.5 rounded hover:bg-purple-100 text-purple-600"
+            >
+              <BarChart3 className="h-3.5 w-3.5" aria-hidden="true" />
+            </button>
+          )}
           {count > 0 && (
             <button
               onClick={() => handleExportActivity(a)}

@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, NavLink, useLocation } from 're
 import { ClipboardList, PlusCircle, Home as HomeIcon, Database, Lock, KeyRound, LifeBuoy, CalendarDays, Menu, X, Settings, History } from 'lucide-react';
 import Home from './pages/Home';
 import Activities from './pages/Activities';
+import ActivityStats from './pages/ActivityStats';
 import Audit from './pages/Audit';
 import RegistrationForm from './components/RegistrationForm';
 import RegistrationList from './components/RegistrationList';
@@ -32,9 +33,10 @@ const PAGE_TITLES: Record<string, string> = {
 function PageHeader() {
   const location = useLocation();
   const path = location.pathname;
-  const title = path.startsWith('/edit/')
-    ? "Modifier l'inscription"
-    : PAGE_TITLES[path] || '';
+  let title = '';
+  if (path.startsWith('/edit/')) title = "Modifier l'inscription";
+  else if (path.startsWith('/activities/') && path.endsWith('/stats')) title = '';
+  else title = PAGE_TITLES[path] || '';
 
   if (!title) return null;
 
@@ -161,6 +163,7 @@ function AppShell() {
               <Route path="/edit/:id" element={<RegistrationForm />} />
               <Route path="/registrations" element={<RegistrationList />} />
               <Route path="/activities" element={<Activities />} />
+              <Route path="/activities/:id/stats" element={<ActivityStats />} />
               <Route path="/audit" element={<Audit />} />
             </Routes>
           </div>
