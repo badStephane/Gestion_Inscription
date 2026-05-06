@@ -59,11 +59,12 @@ jobs:
           RAW_PWD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: |
           KEY_PATH="$RUNNER_TEMP/tauri-signing.key"
-          # Strip all whitespace (newlines, spaces, CR) from the secret in
-          # case GitHub Secrets injected any during paste, then write the
-          # base64 string to a file. We pass the PATH to tauri build, not
-          # the content, so env var interpolation can't corrupt it.
-          printf '%s' "$RAW_KEY" | tr -d '[:space:]' > "$KEY_PATH"
+          # Keep only valid base64 characters (A-Z a-z 0-9 + / =) and
+          # drop everything else. This strips whitespace, CR, AND any
+          # zsh end-of-line markers ('%') that may have been copied
+          # along with the key contents (zsh PROMPT_EOL_MARK behavior
+          # when the source file lacks a trailing newline).
+          printf '%s' "$RAW_KEY" | LC_ALL=C tr -dc 'A-Za-z0-9+/=' > "$KEY_PATH"
           SIZE=$(wc -c < "$KEY_PATH" | tr -d ' ')
           echo "Signing key file size: $SIZE bytes (expected 348 for a fresh tauri signer generate --ci output)"
           if [ "$SIZE" -eq 0 ]; then
