@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { addRegistration, getRegistrationById, updateRegistration } from '../utils/storage';
+import { addRegistration, getRegistrationById, updateRegistration, findDuplicateRegistration } from '../utils/storage';
 import { getActivities } from '../utils/activities';
-import { Activity, DEFAULT_ACTIVITY_ID } from '../types';
+import { Activity, DEFAULT_ACTIVITY_ID, Registration } from '../types';
 import { CheckCircle, AlertCircle, Save, X } from 'lucide-react';
+import ConfirmModal from './ConfirmModal';
 
 interface FormState {
   firstName: string;
@@ -39,6 +40,7 @@ const RegistrationForm: React.FC = () => {
   const [isLoadingExisting, setIsLoadingExisting] = useState(isEditMode);
   const [notFound, setNotFound] = useState(false);
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [duplicate, setDuplicate] = useState<Registration | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -138,41 +140,64 @@ const RegistrationForm: React.FC = () => {
     }
   };
 
+  const buildPayload = () => ({
+    firstName: formData.firstName.trim(),
+    lastName: formData.lastName.trim(),
+    phone: formData.phone.trim(),
+    address: formData.address.trim(),
+    registrationDate: formData.registrationDate,
+    paymentType: formData.paymentType,
+    amount: parseFloat(formData.amount.replace(',', '.')),
+    activityId: formData.activityId,
+  });
+
+  const persist = async () => {
+    setIsSubmitting(true);
+    try {
+      const payload = buildPayload();
+      if (isEditMode && editId) {
+        await updateRegistration({ id: editId, ...payload });
+      } else {
+        await addRegistration(payload);
+      }
+      setIsSuccess(true);
+      setTimeout(() => {
+        setIsSuccess(false);
+        navigate('/registrations');
+      }, 1200);
+    } catch (error) {
+      console.error('Error saving registration:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validate()) return;
 
-    if (validate()) {
-      setIsSubmitting(true);
-
-      try {
-        const payload = {
-          firstName: formData.firstName.trim(),
-          lastName: formData.lastName.trim(),
-          phone: formData.phone.trim(),
-          address: formData.address.trim(),
-          registrationDate: formData.registrationDate,
-          paymentType: formData.paymentType,
-          amount: parseFloat(formData.amount.replace(',', '.')),
-          activityId: formData.activityId,
-        };
-
-        if (isEditMode && editId) {
-          await updateRegistration({ id: editId, ...payload });
-        } else {
-          await addRegistration(payload);
-        }
-        setIsSuccess(true);
-
-        setTimeout(() => {
-          setIsSuccess(false);
-          navigate('/registrations');
-        }, 1200);
-      } catch (error) {
-        console.error('Error saving registration:', error);
-      } finally {
-        setIsSubmitting(false);
+    try {
+      const existing = await findDuplicateRegistration(
+        formData.activityId,
+        formData.lastName.trim(),
+        formData.firstName.trim(),
+        formData.phone.trim(),
+        editId
+      );
+      if (existing) {
+        setDuplicate(existing);
+        return;
       }
+    } catch (error) {
+      console.error('Error checking for duplicate:', error);
     }
+
+    await persist();
+  };
+
+  const handleConfirmDuplicate = async () => {
+    setDuplicate(null);
+    await persist();
   };
 
   if (isLoadingExisting) {
@@ -410,6 +435,21 @@ const RegistrationForm: React.FC = () => {
           </div>
         </form>
       )}
+
+      <ConfirmModal
+        open={duplicate !== null}
+        title="Inscription déjà existante"
+        message={
+          duplicate
+            ? `${duplicate.lastName} ${duplicate.firstName} (${duplicate.phone}) est déjà inscrit(e) à cette activité. Voulez-vous quand même créer une nouvelle inscription ?`
+            : ''
+        }
+        confirmLabel="Créer quand même"
+        cancelLabel="Annuler"
+        variant="danger"
+        onConfirm={handleConfirmDuplicate}
+        onCancel={() => setDuplicate(null)}
+      />
     </div>
   );
 };

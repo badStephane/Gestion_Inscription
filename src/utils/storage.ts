@@ -47,6 +47,36 @@ export const getRegistrationById = async (id: string): Promise<Registration | nu
   return rows.length > 0 ? rowToRegistration(rows[0]) : null;
 };
 
+export const findDuplicateRegistration = async (
+  activityId: string,
+  lastName: string,
+  firstName: string,
+  phone: string,
+  excludeId?: string
+): Promise<Registration | null> => {
+  const db = await getDb();
+  const phoneDigits = phone.replace(/\D/g, '');
+  const sql = excludeId
+    ? `SELECT ${COLUMNS} FROM registrations
+         WHERE activity_id = $1
+           AND LOWER(TRIM(last_name)) = LOWER(TRIM($2))
+           AND LOWER(TRIM(first_name)) = LOWER(TRIM($3))
+           AND REPLACE(REPLACE(REPLACE(phone, ' ', ''), '-', ''), '+', '') LIKE $4
+           AND id != $5
+         LIMIT 1`
+    : `SELECT ${COLUMNS} FROM registrations
+         WHERE activity_id = $1
+           AND LOWER(TRIM(last_name)) = LOWER(TRIM($2))
+           AND LOWER(TRIM(first_name)) = LOWER(TRIM($3))
+           AND REPLACE(REPLACE(REPLACE(phone, ' ', ''), '-', ''), '+', '') LIKE $4
+         LIMIT 1`;
+  const params = excludeId
+    ? [activityId, lastName, firstName, `%${phoneDigits}%`, excludeId]
+    : [activityId, lastName, firstName, `%${phoneDigits}%`];
+  const rows = await db.select<Row[]>(sql, params);
+  return rows.length > 0 ? rowToRegistration(rows[0]) : null;
+};
+
 export const addRegistration = async (
   registration: Omit<Registration, 'id' | 'createdAt'>
 ): Promise<Registration> => {
