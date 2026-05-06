@@ -27,9 +27,6 @@ jobs:
     env:
       # Opt-in to Node 24 for JavaScript-based actions (Node 20 deprecated by GitHub)
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
-      # Tauri updater signing — required to produce signed update bundles
-      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
 
     steps:
       - name: Checkout
@@ -54,6 +51,22 @@ jobs:
 
       - name: Install npm dependencies
         run: npm ci
+
+      - name: Sanitize Tauri signing key
+        shell: bash
+        env:
+          RAW_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          RAW_PWD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          # Strip all whitespace from the base64-encoded key in case GitHub
+          # Secrets injected stray newlines/CR/spaces during paste.
+          CLEAN_KEY=$(printf '%s' "$RAW_KEY" | tr -d '[:space:]')
+          if [ -z "$CLEAN_KEY" ]; then
+            echo "WARNING: TAURI_SIGNING_PRIVATE_KEY secret is empty; signed update bundles will not be produced." >&2
+          fi
+          echo "::add-mask::$CLEAN_KEY"
+          echo "TAURI_SIGNING_PRIVATE_KEY=$CLEAN_KEY" >> "$GITHUB_ENV"
+          echo "TAURI_SIGNING_PRIVATE_KEY_PASSWORD=$RAW_PWD" >> "$GITHUB_ENV"
 
       - name: Build Tauri
         run: npm run tauri:build -- ${{ matrix.tauri_args }}
