@@ -21,7 +21,16 @@ const MIN_PASSWORD_LENGTH = 6;
 interface AuthContextValue {
   lock: () => void;
   changePassword: (current: string, next: string) => Promise<{ ok: boolean; error?: string }>;
+  autoLockMinutes: number;
+  setAutoLockMinutes: (minutes: number) => void;
 }
+
+const AUTO_LOCK_STORAGE_KEY = 'autoLockMinutes';
+const readAutoLockMinutes = (): number => {
+  const stored = localStorage.getItem(AUTO_LOCK_STORAGE_KEY);
+  const parsed = stored ? parseInt(stored, 10) : 0;
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+};
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
@@ -44,7 +53,14 @@ const AuthGate: React.FC<AuthGateProps> = ({ children }) => {
   const [resetOpen, setResetOpen] = useState(false);
   const [recoveryUnlockOpen, setRecoveryUnlockOpen] = useState(false);
   const [recoveryAvailable, setRecoveryAvailable] = useState(false);
+  const [autoLockMinutes, setAutoLockMinutesState] = useState<number>(readAutoLockMinutes);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const setAutoLockMinutes = useCallback((minutes: number) => {
+    const safe = Number.isFinite(minutes) && minutes >= 0 ? minutes : 0;
+    localStorage.setItem(AUTO_LOCK_STORAGE_KEY, String(safe));
+    setAutoLockMinutesState(safe);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -156,6 +172,23 @@ const AuthGate: React.FC<AuthGateProps> = ({ children }) => {
     setPhase('lock');
   }, []);
 
+  // Auto-lock after configured inactivity
+  useEffect(() => {
+    if (phase !== 'unlocked' || autoLockMinutes <= 0) return;
+    const ms = autoLockMinutes * 60 * 1000;
+    let timer = window.setTimeout(() => lock(), ms);
+    const reset = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => lock(), ms);
+    };
+    const events: (keyof WindowEventMap)[] = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'wheel'];
+    events.forEach(e => window.addEventListener(e, reset, { passive: true }));
+    return () => {
+      window.clearTimeout(timer);
+      events.forEach(e => window.removeEventListener(e, reset));
+    };
+  }, [phase, autoLockMinutes, lock]);
+
   const changePassword = useCallback(
     async (current: string, next: string): Promise<{ ok: boolean; error?: string }> => {
       if (next.length < MIN_PASSWORD_LENGTH) {
@@ -176,7 +209,7 @@ const AuthGate: React.FC<AuthGateProps> = ({ children }) => {
 
   if (phase === 'unlocked') {
     return (
-      <AuthContext.Provider value={{ lock, changePassword }}>
+      <AuthContext.Provider value={{ lock, changePassword, autoLockMinutes, setAutoLockMinutes }}>
         {children}
       </AuthContext.Provider>
     );
