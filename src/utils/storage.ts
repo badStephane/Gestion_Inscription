@@ -1,5 +1,9 @@
 import { Registration } from '../types';
 import { getDb } from './db';
+import { logEvent } from './audit';
+
+const formatRegistrationSummary = (r: Pick<Registration, 'lastName' | 'firstName' | 'amount'>): string =>
+  `${r.lastName} ${r.firstName} · ${new Intl.NumberFormat('fr-FR').format(r.amount)} F`;
 
 interface Row {
   id: string;
@@ -101,6 +105,7 @@ export const addRegistration = async (
       newRegistration.createdAt,
     ]
   );
+  await logEvent('created', 'registration', newRegistration.id, formatRegistrationSummary(newRegistration));
   return newRegistration;
 };
 
@@ -131,11 +136,16 @@ export const updateRegistration = async (
       registration.id,
     ]
   );
+  await logEvent('updated', 'registration', registration.id, formatRegistrationSummary(registration));
 };
 
 export const deleteRegistration = async (id: string): Promise<void> => {
   const db = await getDb();
+  const before = await getRegistrationById(id);
   await db.execute('DELETE FROM registrations WHERE id = $1', [id]);
+  if (before) {
+    await logEvent('deleted', 'registration', id, formatRegistrationSummary(before));
+  }
 };
 
 export const addRegistrationsBulk = async (
@@ -169,6 +179,9 @@ export const addRegistrationsBulk = async (
       inserted.push(newReg);
     }
     await db.execute('COMMIT');
+    for (const reg of inserted) {
+      await logEvent('created', 'registration', reg.id, formatRegistrationSummary(reg));
+    }
     return inserted;
   } catch (error) {
     await db.execute('ROLLBACK');

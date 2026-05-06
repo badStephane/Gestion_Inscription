@@ -89,6 +89,21 @@ pub fn run() {
             ALTER TABLE registrations_new RENAME TO registrations;",
       kind: MigrationKind::Up,
     },
+    Migration {
+      version: 8,
+      description: "create_audit_events_table",
+      sql: "CREATE TABLE IF NOT EXISTS audit_events (
+              id TEXT PRIMARY KEY NOT NULL,
+              event_type TEXT NOT NULL CHECK(event_type IN ('created','updated','deleted','archived','unarchived')),
+              entity_type TEXT NOT NULL CHECK(entity_type IN ('registration','activity')),
+              entity_id TEXT NOT NULL,
+              summary TEXT NOT NULL,
+              details TEXT,
+              created_at INTEGER NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS audit_events_created_at_idx ON audit_events (created_at DESC);",
+      kind: MigrationKind::Up,
+    },
   ];
 
   tauri::Builder::default()

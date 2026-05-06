@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, NavLink, useLocation } from 'react-router-dom';
-import { ClipboardList, PlusCircle, Home as HomeIcon, Database, Lock, KeyRound, LifeBuoy, CalendarDays, Menu, X, Settings } from 'lucide-react';
+import { ClipboardList, PlusCircle, Home as HomeIcon, Database, Lock, KeyRound, LifeBuoy, CalendarDays, Menu, X, Settings, History } from 'lucide-react';
 import Home from './pages/Home';
 import Activities from './pages/Activities';
+import Audit from './pages/Audit';
 import RegistrationForm from './components/RegistrationForm';
 import RegistrationList from './components/RegistrationList';
 import AuthGate, { useAuth } from './components/AuthGate';
@@ -25,6 +26,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/add': 'Nouvelle inscription',
   '/registrations': 'Liste des inscriptions',
   '/activities': 'Activités',
+  '/audit': 'Historique',
 };
 
 function PageHeader() {
@@ -101,6 +103,10 @@ function AppShell() {
               <CalendarDays className="h-4 w-4" />
               Activités
             </NavLink>
+            <NavLink to="/audit" className={navLinkClass} onClick={() => setSidebarOpen(false)}>
+              <History className="h-4 w-4" />
+              Historique
+            </NavLink>
           </nav>
 
           {/* Account actions */}
@@ -155,6 +161,7 @@ function AppShell() {
               <Route path="/edit/:id" element={<RegistrationForm />} />
               <Route path="/registrations" element={<RegistrationList />} />
               <Route path="/activities" element={<Activities />} />
+              <Route path="/audit" element={<Audit />} />
             </Routes>
           </div>
         </main>

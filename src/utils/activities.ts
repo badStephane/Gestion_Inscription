@@ -1,5 +1,6 @@
 import { Activity } from '../types';
 import { getDb } from './db';
+import { logEvent } from './audit';
 
 interface Row {
   id: string;
@@ -62,6 +63,7 @@ export const addActivity = async (
       newActivity.createdAt,
     ]
   );
+  await logEvent('created', 'activity', newActivity.id, newActivity.name);
   return newActivity;
 };
 
@@ -79,16 +81,21 @@ export const updateActivity = async (
       activity.id,
     ]
   );
+  await logEvent('updated', 'activity', activity.id, activity.name);
 };
 
 export const archiveActivity = async (id: string): Promise<void> => {
   const db = await getDb();
+  const before = await getActivityById(id);
   await db.execute('UPDATE activities SET archived_at = $1 WHERE id = $2', [Date.now(), id]);
+  if (before) await logEvent('archived', 'activity', id, before.name);
 };
 
 export const unarchiveActivity = async (id: string): Promise<void> => {
   const db = await getDb();
+  const before = await getActivityById(id);
   await db.execute('UPDATE activities SET archived_at = NULL WHERE id = $1', [id]);
+  if (before) await logEvent('unarchived', 'activity', id, before.name);
 };
 
 export const countRegistrationsForActivity = async (id: string): Promise<number> => {
@@ -102,5 +109,7 @@ export const countRegistrationsForActivity = async (id: string): Promise<number>
 
 export const deleteActivity = async (id: string): Promise<void> => {
   const db = await getDb();
+  const before = await getActivityById(id);
   await db.execute('DELETE FROM activities WHERE id = $1', [id]);
+  if (before) await logEvent('deleted', 'activity', id, before.name);
 };
