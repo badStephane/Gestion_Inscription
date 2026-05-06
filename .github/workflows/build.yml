@@ -52,20 +52,26 @@ jobs:
       - name: Install npm dependencies
         run: npm ci
 
-      - name: Sanitize Tauri signing key
+      - name: Setup Tauri signing key
         shell: bash
         env:
           RAW_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           RAW_PWD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: |
-          # Strip all whitespace from the base64-encoded key in case GitHub
-          # Secrets injected stray newlines/CR/spaces during paste.
-          CLEAN_KEY=$(printf '%s' "$RAW_KEY" | tr -d '[:space:]')
-          if [ -z "$CLEAN_KEY" ]; then
-            echo "WARNING: TAURI_SIGNING_PRIVATE_KEY secret is empty; signed update bundles will not be produced." >&2
+          KEY_PATH="$RUNNER_TEMP/tauri-signing.key"
+          # Strip all whitespace (newlines, spaces, CR) from the secret in
+          # case GitHub Secrets injected any during paste, then write the
+          # base64 string to a file. We pass the PATH to tauri build, not
+          # the content, so env var interpolation can't corrupt it.
+          printf '%s' "$RAW_KEY" | tr -d '[:space:]' > "$KEY_PATH"
+          SIZE=$(wc -c < "$KEY_PATH" | tr -d ' ')
+          echo "Signing key file size: $SIZE bytes (expected 348 for a fresh tauri signer generate --ci output)"
+          if [ "$SIZE" -eq 0 ]; then
+            echo "ERROR: TAURI_SIGNING_PRIVATE_KEY secret is empty." >&2
+            exit 1
           fi
-          echo "::add-mask::$CLEAN_KEY"
-          echo "TAURI_SIGNING_PRIVATE_KEY=$CLEAN_KEY" >> "$GITHUB_ENV"
+          chmod 600 "$KEY_PATH"
+          echo "TAURI_SIGNING_PRIVATE_KEY=$KEY_PATH" >> "$GITHUB_ENV"
           echo "TAURI_SIGNING_PRIVATE_KEY_PASSWORD=$RAW_PWD" >> "$GITHUB_ENV"
 
       - name: Build Tauri
