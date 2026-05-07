@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   PlusCircle,
@@ -7,8 +7,10 @@ import {
   Coins,
   CalendarClock,
   CalendarRange,
-  Trophy,
   Clock,
+  CalendarDays,
+  Hourglass,
+  BarChart3,
 } from 'lucide-react';
 import { getRegistrations } from '../utils/storage';
 import { getActivities } from '../utils/activities';
@@ -37,6 +39,13 @@ const todayIso = (): string => {
 
 const monthIsoPrefix = (): string => todayIso().slice(0, 7);
 
+const daysBetween = (fromIso: string, toIso: string): number => {
+  const a = new Date(fromIso);
+  const b = new Date(toIso);
+  if (isNaN(a.getTime()) || isNaN(b.getTime())) return 0;
+  return Math.round((b.getTime() - a.getTime()) / (24 * 60 * 60 * 1000));
+};
+
 const PAYMENT_META: Record<
   Registration['paymentType'],
   { label: string; barClass: string; dotClass: string; textClass: string }
@@ -61,19 +70,27 @@ const PAYMENT_META: Record<
   },
 };
 
+const STORAGE_KEY = 'home.currentActivityId';
+
+const pickCurrentActivity = (activities: Activity[]): Activity | null => {
+  const live = activities.filter(a => !a.archivedAt);
+  if (live.length === 0) return null;
+
+  const today = todayIso();
+  const upcoming = live
+    .filter(a => a.eventDate && a.eventDate >= today)
+    .sort((a, b) => (a.eventDate ?? '').localeCompare(b.eventDate ?? ''));
+  if (upcoming.length > 0) return upcoming[0];
+
+  // No upcoming → fall back to most recently created non-archived
+  return live.slice().sort((a, b) => b.createdAt - a.createdAt)[0];
+};
+
 interface PaymentBreakdown {
   type: Registration['paymentType'];
   count: number;
   amount: number;
   share: number;
-}
-
-interface ActivityRanking {
-  id: string;
-  name: string;
-  color: string;
-  count: number;
-  amount: number;
 }
 
 interface DashboardData {
@@ -83,6 +100,15 @@ interface DashboardData {
 
 const Home: React.FC = () => {
   const [data, setData] = useState<DashboardData | null>(null);
+  const [currentActivityId, setCurrentActivityIdState] = useState<string>(() => {
+    return localStorage.getItem(STORAGE_KEY) ?? '';
+  });
+
+  const setCurrentActivityId = (id: string) => {
+    if (id) localStorage.setItem(STORAGE_KEY, id);
+    else localStorage.removeItem(STORAGE_KEY);
+    setCurrentActivityIdState(id);
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -94,6 +120,15 @@ const Home: React.FC = () => {
         ]);
         if (cancelled) return;
         setData({ registrations, activities });
+        // Auto-pick current activity if none selected, or stored id is no
+        // longer valid (deleted, archived).
+        const stored = localStorage.getItem(STORAGE_KEY);
+        const liveActivities = activities.filter(a => !a.archivedAt);
+        const isStoredValid = stored && liveActivities.some(a => a.id === stored);
+        if (!isStoredValid) {
+          const auto = pickCurrentActivity(activities);
+          if (auto) setCurrentActivityId(auto.id);
+        }
       } catch {
         if (!cancelled) setData({ registrations: [], activities: [] });
       }
@@ -103,9 +138,25 @@ const Home: React.FC = () => {
     };
   }, []);
 
-  const stats = useMemo(() => {
+  const currentActivity = useMemo(() => {
     if (!data) return null;
-    const { registrations, activities } = data;
+    return data.activities.find(a => a.id === currentActivityId) ?? null;
+  }, [data, currentActivityId]);
+
+  const liveActivities = useMemo(() => {
+    if (!data) return [];
+    return data.activities
+      .filter(a => !a.archivedAt)
+      .sort((a, b) => {
+        const ad = a.eventDate ?? '9999-12-31';
+        const bd = b.eventDate ?? '9999-12-31';
+        return ad.localeCompare(bd);
+      });
+  }, [data]);
+
+  const stats = useMemo(() => {
+    if (!data || !currentActivity) return null;
+    const registrations = data.registrations.filter(r => r.activityId === currentActivity.id);
 
     const sumOf = (rs: Registration[]) => rs.reduce((acc, r) => acc + r.amount, 0);
     const today = todayIso();
@@ -129,27 +180,6 @@ const Home: React.FC = () => {
       };
     });
 
-    const activityById = new Map(activities.map(a => [a.id, a] as const));
-    const ranking: ActivityRanking[] = Array.from(
-      registrations.reduce((map, r) => {
-        const cur = map.get(r.activityId) ?? { count: 0, amount: 0 };
-        map.set(r.activityId, { count: cur.count + 1, amount: cur.amount + r.amount });
-        return map;
-      }, new Map<string, { count: number; amount: number }>())
-    )
-      .map(([id, v]) => {
-        const a = activityById.get(id);
-        return {
-          id,
-          name: a?.name ?? 'Activité supprimée',
-          color: a?.color ?? '#94a3b8',
-          count: v.count,
-          amount: v.amount,
-        };
-      })
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 5);
-
     const recent = [...registrations]
       .sort((a, b) => b.createdAt - a.createdAt)
       .slice(0, 5);
@@ -165,14 +195,14 @@ const Home: React.FC = () => {
       monthAmount: sumOf(monthList),
       avgTicket,
       breakdown,
-      ranking,
       recent,
     };
-  }, [data]);
+  }, [data, currentActivity]);
 
-  if (stats === null) {
+  if (data === null) {
     return (
       <div className="p-6 max-w-6xl">
+        <div className="skeleton h-9 w-72 rounded mb-4" />
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="panel p-4">
@@ -182,37 +212,110 @@ const Home: React.FC = () => {
           ))}
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-          <div className="panel p-4 lg:col-span-1">
-            <div className="skeleton h-3 w-24 rounded mb-3" />
-            <div className="skeleton h-2 w-full rounded mb-3" />
-            <div className="skeleton h-3 w-3/4 rounded mb-2" />
-            <div className="skeleton h-3 w-2/3 rounded mb-2" />
-            <div className="skeleton h-3 w-1/2 rounded" />
-          </div>
-          <div className="panel p-4 lg:col-span-2">
-            <div className="skeleton h-3 w-32 rounded mb-3" />
-            <div className="skeleton h-3 w-full rounded mb-2" />
-            <div className="skeleton h-3 w-full rounded mb-2" />
-            <div className="skeleton h-3 w-full rounded" />
-          </div>
+          <div className="panel p-4 skeleton h-48" />
+          <div className="panel p-4 skeleton h-48" />
+          <div className="panel p-4 skeleton h-48" />
         </div>
       </div>
     );
   }
 
-  const isEmpty = stats.total === 0;
+  // No activity at all
+  if (liveActivities.length === 0) {
+    return (
+      <div className="p-6 max-w-6xl">
+        <div className="panel p-8 text-center">
+          <CalendarDays className="h-8 w-8 text-gray-300 mx-auto mb-2" />
+          <p className="text-sm font-medium text-gray-700 mb-1">Aucune activité active</p>
+          <p className="text-xs text-gray-500 mb-4">
+            Créez une activité pour commencer à suivre ses inscriptions ici.
+          </p>
+          <Link to="/activities" className="btn btn-primary">
+            <CalendarDays className="h-3.5 w-3.5" />
+            Aller aux activités
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const isEmpty = !stats || stats.total === 0;
+  const daysToEvent = currentActivity?.eventDate
+    ? daysBetween(todayIso(), currentActivity.eventDate)
+    : null;
 
   return (
     <div className="p-6 max-w-6xl">
+      {/* Activity selector header */}
+      <div className="mb-4 panel px-4 py-3 flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <span
+            className="inline-block h-3 w-3 rounded-full shrink-0"
+            style={{ backgroundColor: currentActivity?.color ?? '#94a3b8' }}
+          />
+          <div className="min-w-0">
+            <p className="text-[10px] font-medium uppercase tracking-wider text-gray-500">
+              Activité en cours
+            </p>
+            <p className="text-sm font-semibold text-gray-900 truncate">
+              {currentActivity?.name ?? 'Aucune'}
+            </p>
+          </div>
+        </div>
+
+        <div className="ml-auto flex items-center gap-2">
+          {currentActivity?.eventDate && (
+            <span className="hidden md:inline-flex items-center gap-1.5 text-xs text-gray-600">
+              <Hourglass className="h-3.5 w-3.5 text-gray-400" />
+              {daysToEvent !== null && daysToEvent > 0 && (
+                <>Dans <b className="tabular-nums">{daysToEvent}</b> jour{daysToEvent > 1 ? 's' : ''}</>
+              )}
+              {daysToEvent === 0 && <>C'est aujourd'hui !</>}
+              {daysToEvent !== null && daysToEvent < 0 && (
+                <>Il y a <b className="tabular-nums">{-daysToEvent}</b> jour{-daysToEvent > 1 ? 's' : ''}</>
+              )}
+            </span>
+          )}
+
+          <label className="flex items-center gap-1.5 text-xs text-gray-600">
+            <span className="hidden sm:inline">Activité :</span>
+            <select
+              value={currentActivityId}
+              onChange={(e) => setCurrentActivityId(e.target.value)}
+              aria-label="Choisir l'activité affichée"
+              className="input-field w-auto py-1"
+            >
+              {liveActivities.map(a => (
+                <option key={a.id} value={a.id}>
+                  {a.name}
+                  {a.eventDate ? ` — ${formatDateLong(a.eventDate)}` : ''}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          {currentActivity && (
+            <Link
+              to={`/activities/${currentActivity.id}/stats`}
+              className="btn btn-ghost"
+              title="Statistiques détaillées"
+            >
+              <BarChart3 className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Stats</span>
+            </Link>
+          )}
+        </div>
+      </div>
+
       {/* KPI cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
         <KpiCard
           icon={<Users className="h-4 w-4" />}
           iconClass="bg-slate-100 text-slate-700"
-          label="Total inscriptions"
-          value={stats.total.toLocaleString('fr-FR')}
+          label="Inscriptions"
+          value={(stats?.total ?? 0).toLocaleString('fr-FR')}
           hint={
-            stats.avgTicket > 0
+            stats && stats.avgTicket > 0
               ? `Panier moyen ${formatAmount(stats.avgTicket)}`
               : undefined
           }
@@ -220,22 +323,22 @@ const Home: React.FC = () => {
         <KpiCard
           icon={<Coins className="h-4 w-4" />}
           iconClass="bg-amber-100 text-amber-700"
-          label="Montant total"
-          value={formatAmount(stats.totalAmount)}
+          label="Montant collecté"
+          value={formatAmount(stats?.totalAmount ?? 0)}
         />
         <KpiCard
           icon={<CalendarClock className="h-4 w-4" />}
           iconClass="bg-blue-100 text-blue-700"
           label="Aujourd'hui"
-          value={stats.todayCount.toLocaleString('fr-FR')}
-          hint={stats.todayCount > 0 ? formatAmount(stats.todayAmount) : '—'}
+          value={(stats?.todayCount ?? 0).toLocaleString('fr-FR')}
+          hint={stats && stats.todayCount > 0 ? formatAmount(stats.todayAmount) : '—'}
         />
         <KpiCard
           icon={<CalendarRange className="h-4 w-4" />}
           iconClass="bg-violet-100 text-violet-700"
           label="Ce mois-ci"
-          value={stats.monthCount.toLocaleString('fr-FR')}
-          hint={stats.monthCount > 0 ? formatAmount(stats.monthAmount) : '—'}
+          value={(stats?.monthCount ?? 0).toLocaleString('fr-FR')}
+          hint={stats && stats.monthCount > 0 ? formatAmount(stats.monthAmount) : '—'}
         />
       </div>
 
@@ -255,14 +358,14 @@ const Home: React.FC = () => {
         <div className="panel p-8 text-center">
           <Users className="h-8 w-8 text-gray-300 mx-auto mb-2" />
           <p className="text-sm font-medium text-gray-700 mb-1">
-            Aucune inscription pour le moment
+            Aucune inscription pour {currentActivity?.name ?? 'cette activité'}
           </p>
           <p className="text-xs text-gray-500 mb-4">
-            Commencez par enregistrer une nouvelle inscription pour voir les statistiques.
+            Créez la première inscription pour cette activité.
           </p>
           <Link to="/add" className="btn btn-primary">
             <PlusCircle className="h-3.5 w-3.5" />
-            Créer la première inscription
+            Créer une inscription
           </Link>
         </div>
       ) : (
@@ -275,7 +378,7 @@ const Home: React.FC = () => {
 
             {/* Stacked proportional bar */}
             <div className="h-2 w-full rounded-full overflow-hidden bg-gray-100 flex mb-3">
-              {stats.breakdown
+              {stats!.breakdown
                 .filter(b => b.count > 0)
                 .map(b => (
                   <div
@@ -288,7 +391,7 @@ const Home: React.FC = () => {
             </div>
 
             <ul className="space-y-2">
-              {stats.breakdown.map(b => (
+              {stats!.breakdown.map(b => (
                 <li key={b.type} className="flex items-center justify-between text-xs">
                   <div className="flex items-center gap-2 min-w-0">
                     <span
@@ -314,48 +417,55 @@ const Home: React.FC = () => {
             </ul>
           </section>
 
-          {/* Top activities */}
+          {/* Activity details */}
           <section className="panel p-4 lg:col-span-1">
             <h2 className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-3 flex items-center gap-1.5">
-              <Trophy className="h-3.5 w-3.5 text-gray-400" />
-              Top activités
+              <CalendarDays className="h-3.5 w-3.5 text-gray-400" />
+              Détails de l'activité
             </h2>
-            {stats.ranking.length === 0 ? (
-              <p className="text-xs text-gray-500">Aucune donnée.</p>
-            ) : (
-              <ul className="space-y-2">
-                {stats.ranking.map((a, idx) => {
-                  const max = stats.ranking[0].count || 1;
-                  const pct = (a.count / max) * 100;
-                  return (
-                    <li key={a.id} className="text-xs">
-                      <div className="flex items-center justify-between mb-1 gap-2">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="text-gray-400 tabular-nums w-3 text-right">
-                            {idx + 1}
-                          </span>
-                          <span
-                            className="h-2 w-2 rounded-full shrink-0"
-                            style={{ backgroundColor: a.color }}
-                          />
-                          <span className="font-medium text-gray-800 truncate">
-                            {a.name}
-                          </span>
-                        </div>
-                        <span className="text-gray-900 font-semibold tabular-nums">
-                          {a.count}
-                        </span>
-                      </div>
-                      <div className="h-1.5 w-full rounded-full bg-gray-100 overflow-hidden ml-5">
-                        <div
-                          className="h-full rounded-full"
-                          style={{ width: `${pct}%`, backgroundColor: a.color }}
-                        />
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
+            {currentActivity && (
+              <dl className="space-y-2 text-xs">
+                <div className="flex items-center justify-between gap-2">
+                  <dt className="text-gray-500">Nom</dt>
+                  <dd className="text-gray-900 font-medium truncate">{currentActivity.name}</dd>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <dt className="text-gray-500">Date d'événement</dt>
+                  <dd className="text-gray-900 tabular-nums">
+                    {currentActivity.eventDate ? formatDateLong(currentActivity.eventDate) : '—'}
+                  </dd>
+                </div>
+                {daysToEvent !== null && (
+                  <div className="flex items-center justify-between gap-2">
+                    <dt className="text-gray-500">Temps restant</dt>
+                    <dd className="text-gray-900 tabular-nums">
+                      {daysToEvent > 0 && `Dans ${daysToEvent} jour${daysToEvent > 1 ? 's' : ''}`}
+                      {daysToEvent === 0 && "C'est aujourd'hui !"}
+                      {daysToEvent < 0 && `Il y a ${-daysToEvent} jour${-daysToEvent > 1 ? 's' : ''}`}
+                    </dd>
+                  </div>
+                )}
+                <div className="flex items-center justify-between gap-2">
+                  <dt className="text-gray-500">Montant par défaut</dt>
+                  <dd className="text-gray-900 tabular-nums">
+                    {currentActivity.defaultAmount && currentActivity.defaultAmount > 0
+                      ? formatAmount(currentActivity.defaultAmount)
+                      : '—'}
+                  </dd>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <dt className="text-gray-500">Couleur</dt>
+                  <dd className="flex items-center gap-1.5">
+                    <span
+                      className="inline-block h-3 w-3 rounded-full"
+                      style={{ backgroundColor: currentActivity.color }}
+                    />
+                    <span className="text-gray-900 tabular-nums uppercase">
+                      {currentActivity.color}
+                    </span>
+                  </dd>
+                </div>
+              </dl>
             )}
           </section>
 
@@ -374,7 +484,7 @@ const Home: React.FC = () => {
               </Link>
             </div>
             <ul className="divide-y divide-gray-100 -mx-1">
-              {stats.recent.map(r => (
+              {stats!.recent.map(r => (
                 <li key={r.id} className="px-1 py-2 flex items-center justify-between gap-2">
                   <div className="min-w-0">
                     <p className="text-xs font-medium text-gray-800 truncate">
