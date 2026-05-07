@@ -21,6 +21,10 @@ import {
   ChevronRight,
   ClipboardList,
   PlusCircle,
+  ArrowLeft,
+  Layers,
+  CalendarDays,
+  Users,
 } from 'lucide-react';
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
@@ -79,6 +83,7 @@ const RegistrationList: React.FC = () => {
   const [pageSize, setPageSize] = useState(25);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const [restoreOpen, setRestoreOpen] = useState(false);
+  const [selectionMade, setSelectionMade] = useState(false);
   const [toast, setToast] = useState<{ open: boolean; variant: ToastVariant; message: string }>({
     open: false,
     variant: 'success',
@@ -117,6 +122,29 @@ const RegistrationList: React.FC = () => {
     for (const a of activities) map[a.id] = a;
     return map;
   }, [activities]);
+
+  const activityStats = useMemo(() => {
+    const map: Record<string, { count: number; amount: number }> = {};
+    for (const r of registrations) {
+      const cur = map[r.activityId] ?? { count: 0, amount: 0 };
+      map[r.activityId] = { count: cur.count + 1, amount: cur.amount + r.amount };
+    }
+    return map;
+  }, [registrations]);
+
+  const handleSelectActivity = (id: string) => {
+    setFilterActivity(id);
+    setSearchTerm('');
+    setFilterPayment('');
+    setFilterDateFrom('');
+    setFilterDateTo('');
+    setSortKey(null);
+    setSelectionMade(true);
+  };
+
+  const handleChangeSelection = () => {
+    setSelectionMade(false);
+  };
 
   useEffect(() => {
     applyFilters();
@@ -325,6 +353,117 @@ const RegistrationList: React.FC = () => {
     );
   }
 
+  if (!selectionMade && registrations.length > 0) {
+    const activeActivities = activities.filter(a => !a.archivedAt);
+    const archivedActivities = activities.filter(a => a.archivedAt);
+
+    const renderActivityCard = (a: Activity) => {
+      const s = activityStats[a.id] ?? { count: 0, amount: 0 };
+      const isArchived = !!a.archivedAt;
+      return (
+        <button
+          key={a.id}
+          type="button"
+          onClick={() => handleSelectActivity(a.id)}
+          className={`panel p-4 text-left hover:border-blue-400 hover:shadow-sm transition-all duration-100 group ${
+            isArchived ? 'opacity-70' : ''
+          }`}
+        >
+          <div className="flex items-start gap-2 mb-2">
+            <span
+              className="h-3 w-3 rounded-full flex-shrink-0 mt-1"
+              style={{ backgroundColor: a.color }}
+              aria-hidden="true"
+            />
+            <div className="min-w-0 flex-1">
+              <h3 className="text-sm font-semibold text-gray-900 truncate group-hover:text-blue-700">
+                {a.name}
+              </h3>
+              {isArchived && (
+                <span className="text-[10px] font-medium uppercase tracking-wider text-gray-500">
+                  Archivée
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center justify-between text-xs">
+            <span className="inline-flex items-center gap-1 text-gray-600">
+              <Users className="h-3 w-3" />
+              <span className="tabular-nums font-medium">{s.count}</span>
+              <span className="text-gray-500">inscription{s.count > 1 ? 's' : ''}</span>
+            </span>
+            <span className="text-gray-700 font-medium tabular-nums">
+              {formatAmount(s.amount)}
+            </span>
+          </div>
+          {a.eventDate && (
+            <div className="mt-1.5 text-[11px] text-gray-500 inline-flex items-center gap-1">
+              <CalendarDays className="h-3 w-3" />
+              {new Date(a.eventDate).toLocaleDateString('fr-FR')}
+            </div>
+          )}
+        </button>
+      );
+    };
+
+    return (
+      <div className="p-6 max-w-5xl">
+        <div className="mb-4">
+          <h2 className="text-sm font-semibold text-gray-800 mb-1">
+            Sélectionnez une liste à consulter
+          </h2>
+          <p className="text-xs text-gray-500">
+            Choisissez une activité pour afficher ses inscriptions, ou consultez toutes les inscriptions.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {/* All registrations */}
+          <button
+            type="button"
+            onClick={() => handleSelectActivity('')}
+            className="panel p-4 text-left hover:border-blue-400 hover:shadow-sm transition-all duration-100 group border-l-2 border-l-blue-400"
+          >
+            <div className="flex items-start gap-2 mb-2">
+              <Layers className="h-3.5 w-3.5 text-blue-500 flex-shrink-0 mt-0.5" />
+              <div className="min-w-0 flex-1">
+                <h3 className="text-sm font-semibold text-gray-900 group-hover:text-blue-700">
+                  Toutes les inscriptions
+                </h3>
+                <p className="text-[11px] text-gray-500 mt-0.5">
+                  Vue globale, toutes activités confondues
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center justify-between text-xs">
+              <span className="inline-flex items-center gap-1 text-gray-600">
+                <Users className="h-3 w-3" />
+                <span className="tabular-nums font-medium">{stats.total}</span>
+                <span className="text-gray-500">inscription{stats.total > 1 ? 's' : ''}</span>
+              </span>
+              <span className="text-gray-700 font-medium tabular-nums">
+                {formatAmount(stats.totalAmount)}
+              </span>
+            </div>
+          </button>
+
+          {activeActivities.map(renderActivityCard)}
+        </div>
+
+        {archivedActivities.length > 0 && (
+          <div className="mt-6">
+            <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
+              Archivées ({archivedActivities.length})
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {archivedActivities.map(renderActivityCard)}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="h-full flex flex-col">
       {/* Stats strip */}
@@ -373,20 +512,37 @@ const RegistrationList: React.FC = () => {
           />
         </div>
 
-        {/* Activity filter */}
-        <select
-          value={filterActivity}
-          onChange={(e) => setFilterActivity(e.target.value)}
-          className="input-field w-auto py-1"
+        {/* Current selection + change button */}
+        <button
+          type="button"
+          onClick={handleChangeSelection}
+          className="btn btn-default"
+          title="Choisir une autre liste"
         >
-          <option value="">Toutes les activités</option>
-          {activities.map(a => (
-            <option key={a.id} value={a.id}>
-              {a.name}
-              {a.archivedAt ? ' (archivée)' : ''}
-            </option>
-          ))}
-        </select>
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Changer
+        </button>
+        <div
+          className="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-gray-100 text-xs text-gray-700 max-w-[220px]"
+          aria-live="polite"
+        >
+          {filterActivity ? (
+            <>
+              <span
+                className="h-2 w-2 rounded-full flex-shrink-0"
+                style={{ backgroundColor: activitiesById[filterActivity]?.color ?? '#94a3b8' }}
+              />
+              <span className="truncate font-medium">
+                {activitiesById[filterActivity]?.name ?? 'Activité supprimée'}
+              </span>
+            </>
+          ) : (
+            <>
+              <Layers className="h-3 w-3 text-gray-500 flex-shrink-0" />
+              <span className="truncate font-medium">Toutes les activités</span>
+            </>
+          )}
+        </div>
 
         {/* Payment filter */}
         <select
