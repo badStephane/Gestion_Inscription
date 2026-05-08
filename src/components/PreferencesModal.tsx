@@ -141,7 +141,8 @@ const PreferencesModal: React.FC<PreferencesModalProps> = ({ open, onClose }) =>
       await refreshContacts();
     } catch (err) {
       console.error('Error importing contacts:', err);
-      showToast('error', "Erreur lors de l'enregistrement.");
+      const msg = err instanceof Error ? err.message : String(err);
+      showToast('error', `Erreur: ${msg}`);
     } finally {
       setImporting(false);
     }
