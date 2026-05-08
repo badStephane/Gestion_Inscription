@@ -108,6 +108,8 @@ export const listSources = async (): Promise<{ source: string; count: number }[]
   return rows.map(r => ({ source: r.source ?? '(sans source)', count: r.n }));
 };
 
+const CONTACT_BATCH_SIZE = 200;
+
 export const addContactsBulk = async (
   contacts: ImportableContact[]
 ): Promise<number> => {
@@ -115,29 +117,41 @@ export const addContactsBulk = async (
   const db = await getDb();
   const now = Date.now();
   let inserted = 0;
-  await db.execute('BEGIN');
-  try {
-    for (const c of contacts) {
-      await db.execute(
-        `INSERT INTO contacts (${COLUMNS}) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-        [
-          crypto.randomUUID(),
-          c.lastName,
-          c.firstName,
-          c.phone,
-          c.address,
-          c.source ?? null,
-          now,
-        ]
+
+  for (let start = 0; start < contacts.length; start += CONTACT_BATCH_SIZE) {
+    const batch = contacts.slice(start, start + CONTACT_BATCH_SIZE);
+    const placeholders: string[] = [];
+    const params: unknown[] = [];
+    let p = 1;
+    for (const c of batch) {
+      placeholders.push(
+        `($${p++}, $${p++}, $${p++}, $${p++}, $${p++}, $${p++}, $${p++})`
       );
-      inserted++;
+      params.push(
+        crypto.randomUUID(),
+        c.lastName,
+        c.firstName,
+        c.phone,
+        c.address,
+        c.source ?? null,
+        now
+      );
     }
-    await db.execute('COMMIT');
-    return inserted;
-  } catch (error) {
-    await db.execute('ROLLBACK');
-    throw error;
+    try {
+      await db.execute(
+        `INSERT INTO contacts (${COLUMNS}) VALUES ${placeholders.join(', ')}`,
+        params
+      );
+      inserted += batch.length;
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      throw new Error(
+        `Lot ${start + 1}-${start + batch.length} — ${msg}`
+      );
+    }
   }
+
+  return inserted;
 };
 
 export const clearContacts = async (source?: string): Promise<number> => {
