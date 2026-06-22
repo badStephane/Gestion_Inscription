@@ -13,6 +13,7 @@ import ChangePasswordModal from './components/ChangePasswordModal';
 import RecoveryCodeModal from './components/RecoveryCodeModal';
 import PreferencesModal from './components/PreferencesModal';
 import UpdateChecker from './components/UpdateChecker';
+import DemoBanner from './components/DemoBanner';
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   `flex items-center gap-2 px-3 py-2.5 min-h-[44px] rounded text-sm transition-colors duration-100 ${
@@ -197,6 +198,7 @@ function AppShell() {
       />
 
       <UpdateChecker />
+      <DemoBanner />
     </Router>
   );
 }

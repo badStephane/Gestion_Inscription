@@ -1,4 +1,5 @@
 import { getDb } from './db';
+import { DEMO_MODE, demoAudit } from './demo';
 
 export type EventType = 'created' | 'updated' | 'deleted' | 'archived' | 'unarchived';
 export type EntityType = 'registration' | 'activity';
@@ -44,6 +45,18 @@ export const logEvent = async (
   summary: string,
   details?: object
 ): Promise<void> => {
+  if (DEMO_MODE) {
+    demoAudit.unshift({
+      id: crypto.randomUUID(),
+      eventType,
+      entityType,
+      entityId,
+      summary,
+      details: details ? JSON.stringify(details) : undefined,
+      createdAt: Date.now(),
+    });
+    return;
+  }
   try {
     const db = await getDb();
     await db.execute(
@@ -64,6 +77,9 @@ export const logEvent = async (
 };
 
 export const getAuditEvents = async (limit = 500): Promise<AuditEvent[]> => {
+  if (DEMO_MODE) {
+    return [...demoAudit].sort((a, b) => b.createdAt - a.createdAt).slice(0, limit);
+  }
   const db = await getDb();
   const rows = await db.select<Row[]>(
     'SELECT id, event_type, entity_type, entity_id, summary, details, created_at FROM audit_events ORDER BY created_at DESC LIMIT $1',
@@ -73,6 +89,10 @@ export const getAuditEvents = async (limit = 500): Promise<AuditEvent[]> => {
 };
 
 export const clearAuditLog = async (): Promise<void> => {
+  if (DEMO_MODE) {
+    demoAudit.length = 0;
+    return;
+  }
   const db = await getDb();
   await db.execute('DELETE FROM audit_events');
 };

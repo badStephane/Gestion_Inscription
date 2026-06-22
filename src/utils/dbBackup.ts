@@ -2,6 +2,7 @@ import { save, open } from '@tauri-apps/plugin-dialog';
 import { copyFile, BaseDirectory } from '@tauri-apps/plugin-fs';
 import { appDataDir, join } from '@tauri-apps/api/path';
 import { getDb } from './db';
+import { DEMO_MODE } from './demo';
 
 const DB_FILENAME = 'inscriptions.db';
 
@@ -11,6 +12,7 @@ const todayStamp = (): string => {
 };
 
 export const exportDatabase = async (): Promise<boolean> => {
+  if (DEMO_MODE) throw new Error('Indisponible en mode démonstration.');
   const target = await save({
     title: 'Exporter la base de données',
     defaultPath: `inscriptions_${todayStamp()}.db`,
@@ -24,6 +26,7 @@ export const exportDatabase = async (): Promise<boolean> => {
 };
 
 export const importDatabase = async (): Promise<boolean> => {
+  if (DEMO_MODE) throw new Error('Indisponible en mode démonstration.');
   const picked = await open({
     title: 'Importer une base de données',
     multiple: false,
