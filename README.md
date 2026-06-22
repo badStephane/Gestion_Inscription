@@ -2,7 +2,7 @@
 
 > Application **desktop** de gestion des inscriptions aux activités : enregistrement des participants, suivi des paiements, statistiques et export Excel. Fonctionne **100 % en local**, sans serveur ni connexion internet.
 
-**Application locale (Tauri 2)** — installée via un simple `.msi`/`.exe` sous Windows. Les données restent sur le poste, dans une base **SQLite** embarquée.
+**Application locale (Tauri 2)** - installée via un simple `.msi`/`.exe` sous Windows. Les données restent sur le poste, dans une base **SQLite** embarquée.
 
 ---
 
@@ -106,7 +106,7 @@ Le déploiement Vercel est préconfiguré ([`vercel.json`](vercel.json) force `V
 ## Données
 
 - Base SQLite : `%APPDATA%/com.badstephane.gestion-inscription/inscriptions.db` (créée au premier lancement)
-- Schéma géré par **migrations Rust** ([`src-tauri/src/lib.rs`](src-tauri/src/lib.rs)) — append-only et versionnées
+- Schéma géré par **migrations Rust** ([`src-tauri/src/lib.rs`](src-tauri/src/lib.rs)) - append-only et versionnées
 - Sauvegarde/restauration via copie du fichier `.db`
 
 ---
@@ -126,6 +126,6 @@ src-tauri/         # shell Rust, migrations SQLite, configuration & permissions
 
 ## Statut
 
-Application interne, **destinée à un usage local** — pas de déploiement public. UI entièrement en français.
+Application interne, **destinée à un usage local** - pas de déploiement public. UI entièrement en français.
 
 **Auteur** : [@badStephane](https://github.com/badStephane)
