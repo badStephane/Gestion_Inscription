@@ -83,6 +83,26 @@ Sous Windows, produit un `.msi` (WiX) et un `.exe` (NSIS). Le workflow [`build-w
 
 ---
 
+## Démo en ligne (données fictives)
+
+L'application est locale par nature, mais le **même code** peut être déployé en démo web (Vercel) avec un jeu de **données fictives**, sans SQLite ni serveur.
+
+Activer le mode démo via une variable d'environnement :
+
+```bash
+VITE_DEMO_MODE=true npm run build
+```
+
+En mode démo :
+- la couche de données est servie depuis des fixtures en mémoire ([`src/utils/demo.ts`](src/utils/demo.ts)) ;
+- l'écran de verrouillage est désactivé ;
+- un bandeau « Mode démonstration » s'affiche ;
+- les écritures restent en mémoire (non persistées) et l'export/import de base `.db` est désactivé.
+
+Le déploiement Vercel est préconfiguré ([`vercel.json`](vercel.json) force `VITE_DEMO_MODE=true` et le routage SPA).
+
+---
+
 ## Données
 
 - Base SQLite : `%APPDATA%/com.badstephane.gestion-inscription/inscriptions.db` (créée au premier lancement)

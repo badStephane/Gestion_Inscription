@@ -1,6 +1,7 @@
 import { Registration } from '../types';
 import { getDb } from './db';
 import { logEvent } from './audit';
+import { DEMO_MODE, demoRegistrations } from './demo';
 
 const formatRegistrationSummary = (r: Pick<Registration, 'lastName' | 'firstName' | 'amount'>): string =>
   `${r.lastName} ${r.firstName} · ${new Intl.NumberFormat('fr-FR').format(r.amount)} F`;
@@ -35,6 +36,7 @@ const rowToRegistration = (r: Row): Registration => ({
 });
 
 export const getRegistrations = async (): Promise<Registration[]> => {
+  if (DEMO_MODE) return [...demoRegistrations].sort((a, b) => b.createdAt - a.createdAt);
   const db = await getDb();
   const rows = await db.select<Row[]>(
     `SELECT ${COLUMNS} FROM registrations ORDER BY created_at DESC`
@@ -43,6 +45,7 @@ export const getRegistrations = async (): Promise<Registration[]> => {
 };
 
 export const getRegistrationById = async (id: string): Promise<Registration | null> => {
+  if (DEMO_MODE) return demoRegistrations.find((r) => r.id === id) ?? null;
   const db = await getDb();
   const rows = await db.select<Row[]>(
     `SELECT ${COLUMNS} FROM registrations WHERE id = $1 LIMIT 1`,
@@ -58,6 +61,19 @@ export const findDuplicateRegistration = async (
   phone: string,
   excludeId?: string
 ): Promise<Registration | null> => {
+  if (DEMO_MODE) {
+    const digits = phone.replace(/\D/g, '');
+    return (
+      demoRegistrations.find(
+        (r) =>
+          r.activityId === activityId &&
+          r.lastName.trim().toLowerCase() === lastName.trim().toLowerCase() &&
+          r.firstName.trim().toLowerCase() === firstName.trim().toLowerCase() &&
+          r.phone.replace(/\D/g, '').includes(digits) &&
+          r.id !== excludeId
+      ) ?? null
+    );
+  }
   const db = await getDb();
   const phoneDigits = phone.replace(/\D/g, '');
   const sql = excludeId
@@ -84,12 +100,17 @@ export const findDuplicateRegistration = async (
 export const addRegistration = async (
   registration: Omit<Registration, 'id' | 'createdAt'>
 ): Promise<Registration> => {
-  const db = await getDb();
   const newRegistration: Registration = {
     ...registration,
     id: crypto.randomUUID(),
     createdAt: Date.now(),
   };
+  if (DEMO_MODE) {
+    demoRegistrations.push(newRegistration);
+    await logEvent('created', 'registration', newRegistration.id, formatRegistrationSummary(newRegistration));
+    return newRegistration;
+  }
+  const db = await getDb();
   await db.execute(
     `INSERT INTO registrations (${COLUMNS}) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
     [
@@ -112,6 +133,12 @@ export const addRegistration = async (
 export const updateRegistration = async (
   registration: Omit<Registration, 'createdAt'>
 ): Promise<void> => {
+  if (DEMO_MODE) {
+    const i = demoRegistrations.findIndex((r) => r.id === registration.id);
+    if (i !== -1) demoRegistrations[i] = { ...demoRegistrations[i], ...registration };
+    await logEvent('updated', 'registration', registration.id, formatRegistrationSummary(registration));
+    return;
+  }
   const db = await getDb();
   await db.execute(
     `UPDATE registrations SET
@@ -140,6 +167,13 @@ export const updateRegistration = async (
 };
 
 export const deleteRegistration = async (id: string): Promise<void> => {
+  if (DEMO_MODE) {
+    const i = demoRegistrations.findIndex((r) => r.id === id);
+    const before = i !== -1 ? demoRegistrations[i] : null;
+    if (i !== -1) demoRegistrations.splice(i, 1);
+    if (before) await logEvent('deleted', 'registration', id, formatRegistrationSummary(before));
+    return;
+  }
   const db = await getDb();
   const before = await getRegistrationById(id);
   await db.execute('DELETE FROM registrations WHERE id = $1', [id]);
@@ -151,6 +185,18 @@ export const deleteRegistration = async (id: string): Promise<void> => {
 export const addRegistrationsBulk = async (
   registrations: Omit<Registration, 'id' | 'createdAt'>[]
 ): Promise<Registration[]> => {
+  if (DEMO_MODE) {
+    const inserted = registrations.map((reg) => ({
+      ...reg,
+      id: crypto.randomUUID(),
+      createdAt: Date.now(),
+    }));
+    demoRegistrations.push(...inserted);
+    for (const reg of inserted) {
+      await logEvent('created', 'registration', reg.id, formatRegistrationSummary(reg));
+    }
+    return inserted;
+  }
   const db = await getDb();
   const inserted: Registration[] = [];
   await db.execute('BEGIN');

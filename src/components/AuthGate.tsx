@@ -9,6 +9,7 @@ import {
 } from '../utils/auth';
 import ConfirmModal from './ConfirmModal';
 import RecoveryUnlockModal from './RecoveryUnlockModal';
+import { DEMO_MODE } from '../utils/demo';
 
 interface AuthGateProps {
   children: React.ReactNode;
@@ -42,7 +43,7 @@ export const useAuth = (): AuthContextValue => {
 
 export { MIN_PASSWORD_LENGTH };
 
-const AuthGate: React.FC<AuthGateProps> = ({ children }) => {
+const ProtectedGate: React.FC<AuthGateProps> = ({ children }) => {
   const [phase, setPhase] = useState<Phase>('loading');
   const [password1, setPassword1] = useState('');
   const [password2, setPassword2] = useState('');
@@ -351,5 +352,24 @@ const AuthGate: React.FC<AuthGateProps> = ({ children }) => {
     </div>
   );
 };
+
+/**
+ * En mode démonstration, l'écran de verrouillage est désactivé : l'application
+ * est directement accessible avec un contexte d'authentification neutralisé.
+ */
+const DemoGate: React.FC<AuthGateProps> = ({ children }) => (
+  <AuthContext.Provider
+    value={{
+      lock: () => {},
+      changePassword: async () => ({ ok: true }),
+      autoLockMinutes: 0,
+      setAutoLockMinutes: () => {},
+    }}
+  >
+    {children}
+  </AuthContext.Provider>
+);
+
+const AuthGate: React.FC<AuthGateProps> = DEMO_MODE ? DemoGate : ProtectedGate;
 
 export default AuthGate;
