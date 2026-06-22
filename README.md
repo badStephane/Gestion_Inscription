@@ -1,6 +1,6 @@
-# Gestion des Inscriptions
+# Actio
 
-> Application **desktop** de gestion des inscriptions aux activités : enregistrement des participants, suivi des paiements, statistiques et export Excel. Fonctionne **100 % en local**, sans serveur ni connexion internet.
+> **Actio** - application **desktop** de gestion des inscriptions aux activités : enregistrement des participants, suivi des paiements, statistiques et export Excel. Fonctionne **100 % en local**, sans serveur ni connexion internet.
 
 **Application locale (Tauri 2)** - installée via un simple `.msi`/`.exe` sous Windows. Les données restent sur le poste, dans une base **SQLite** embarquée.
 

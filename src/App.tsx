@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, NavLink, useLocation } from 'react-router-dom';
 import { getVersion } from '@tauri-apps/api/app';
-import { ClipboardList, PlusCircle, Home as HomeIcon, Database, Lock, KeyRound, LifeBuoy, CalendarDays, Menu, X, Settings, History } from 'lucide-react';
+import { ClipboardList, PlusCircle, Home as HomeIcon, Lock, KeyRound, LifeBuoy, CalendarDays, Menu, X, Settings, History } from 'lucide-react';
 import Home from './pages/Home';
 import Activities from './pages/Activities';
 import ActivityStats from './pages/ActivityStats';
@@ -85,8 +85,8 @@ function AppShell() {
           {/* App title */}
           <div className="px-4 py-4 border-b border-gray-800 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Database className="h-5 w-5 text-blue-400" />
-              <h1 className="text-sm font-semibold text-white tracking-tight">Inscriptions</h1>
+              <img src="/logo-mark.svg" alt="Actio" className="h-6 w-6 rounded" />
+              <h1 className="text-sm font-semibold text-white tracking-tight">Actio</h1>
             </div>
             <button
               onClick={() => setSidebarOpen(false)}
@@ -144,7 +144,7 @@ function AppShell() {
           {/* Version footer */}
           <div className="px-4 py-3 border-t border-gray-800">
             <p className="text-[10px] text-gray-500 uppercase tracking-wider">
-              Gestion Inscription{version ? ` v${version}` : ''}
+              Actio{version ? ` v${version}` : ''}
             </p>
           </div>
         </aside>
@@ -161,8 +161,8 @@ function AppShell() {
               <Menu className="h-5 w-5" />
             </button>
             <div className="flex items-center gap-2">
-              <Database className="h-4 w-4 text-blue-500" />
-              <span className="text-sm font-semibold text-gray-800">Inscriptions</span>
+              <img src="/logo-mark.svg" alt="Actio" className="h-6 w-6 rounded" />
+              <span className="text-sm font-semibold text-gray-800">Actio</span>
             </div>
           </div>
 
